@@ -1,29 +1,47 @@
 services:
-#  app:
-#    build:
-#      context: .
-#      dockerfile: Dockerfile
-#    ports:
-#      - "8080:8080"
-#    environment:
-#      - KAFKA_BROKERS=broker:9092
-#      - KAFKA_TOPIC=orders
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${SERVER_PORT}:${SERVER_PORT}"
+    environment:
+      - KAFKA_BROKERS=kafka:29092
+      - KAFKA_TOPIC=${SERVER_ADDR}
+      - SERVER_ADDR=${SERVER_ADDR}
+      - SERVER_PORT=${SERVER_PORT}
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - postgresql
 
-#  db:
-#    image: postgres:15
-#    container_name: postgres_db
-#    restart: unless-stopped
-#    env_file:
-#      - .env
-#    environment:
-#      POSTGRES_DB: ${POSTGRES_DB}
-#      POSTGRES_USER: ${POSTGRES_USER}
-#      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-#    ports:
-#      - "${POSTGRES_PORT}:5432"
-#    volumes:
-#      - db_data:/var/lib/postgresql/data
-#      - ./init:/docker-entrypoint-initdb.d
+  db:
+    image: postgres:17.6
+    container_name: postgres_db
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGDATA: "/var/lib/postgresql/data/pgdata"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - kafka-net
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.7.1
@@ -44,8 +62,15 @@ services:
     image: confluentinc/cp-server:7.7.1
     hostname: kafka
     container_name: kafka
+    env_file:
+      - .env
     depends_on:
       - zookeeper
+    healthcheck:
+      test: [ "CMD-SHELL", "kafka-topics.sh --bootstrap-server ${KAFKA_HEALTHCHECK_HOST}:${KAFKA_HEALTHCHECK_PORT} --topic ${KAFKA_HEALTHCHECK_TOPIC} --describe" ]
+      interval: ${KAFKA_HEALTHCHECK_INTERVAL}
+      timeout: ${KAFKA_HEALTHCHECK_TIMEOUT}
+      retries: ${KAFKA_HEALTHCHECK_RETRIES}
     ports:
       - "9092:9092"
     environment:
@@ -56,7 +81,6 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     networks:
       - kafka-net
-
 
   kafka-ui:
     container_name: kafka-ui
@@ -75,6 +99,8 @@ services:
 
 networks:
   kafka-net:
+    driver: bridge
+  postgresql:
     driver: bridge
 
 volumes:

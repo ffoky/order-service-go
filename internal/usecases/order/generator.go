@@ -1,6 +1,7 @@
 package order
 
 import (
+	"WBTECH_L0/internal/domain"
 	"WBTECH_L0/internal/domain/dto"
 	"fmt"
 	"github.com/brianvoe/gofakeit/v7"
@@ -14,7 +15,7 @@ var (
 	currencies       = []string{"USD", "EUR", "RUB"}
 	providers        = []string{"wbpay", "paypal", "stripe", "alpha"}
 	banks            = []string{"alpha", "sber", "tinkoff", "vtb"}
-	deliveryServices = []string{"meest", "dhl", "fedex", "ups", "russianpost"}
+	deliveryServices = []string{"fedex", "ups", "CDEK", "russianpost"}
 	brands           = []string{"Vivienne Sabo", "L'Oreal", "Maybelline", "Revlon", "MAC", "Chanel"}
 	itemNames        = []string{"Mascara", "Lipstick", "Foundation", "Eyeshadow", "Blush", "Concealer"}
 	sizes            = []string{"0", "XS", "S", "M", "L", "XL"}
@@ -69,7 +70,7 @@ func (g *Generator) generateRID() string {
 }
 
 // generateInvalidOrder создает невалидный заказ для тестирования обработки ошибок
-func (g *Generator) generateInvalidOrder() *dto.OrderDTO {
+func (g *Generator) generateInvalidOrder() *domain.Order {
 	order := g.generateOrder()
 
 	// Делаем заказ невалидным случайным образом
@@ -88,7 +89,7 @@ func (g *Generator) generateInvalidOrder() *dto.OrderDTO {
 }
 
 // generateOrder создает случайный заказ
-func (g *Generator) generateOrder() *dto.OrderDTO {
+func (g *Generator) generateOrder() *domain.Order {
 	gofakeit.Seed(time.Now().UnixNano())
 
 	orderUID := g.generateValidOrderUID()
@@ -105,7 +106,7 @@ func (g *Generator) generateOrder() *dto.OrderDTO {
 		totalPrice := price - (price * sale / 100)
 		goodsTotal += totalPrice
 
-		items[i] = dto.ItemDTO{
+		items[i] = domain.Item{
 			ChrtID:      rand.Intn(10000000) + 1000000, // 7-значное число
 			TrackNumber: trackNumber,
 			Price:       price,

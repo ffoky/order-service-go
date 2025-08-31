@@ -1,9 +1,11 @@
 package usecases
 
-import "WBTECH_L0/internal/domain"
+import (
+	"WBTECH_L0/internal/domain"
+	"context"
+)
 
-// Реализовал только Post потому что остальные пока не надо
-// возможно понадобится Get
 type Order interface {
-	Post(order domain.Order) error
+	Create(ctx context.Context, order *domain.Order) (*domain.Order, error)
+	Get(ctx context.Context, orderUID string) (*domain.Order, error)
 }

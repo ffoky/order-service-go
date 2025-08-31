@@ -3,55 +3,18 @@ package domain
 import "time"
 
 type Order struct {
-	OrderUID          string
-	TrackNumber       string
-	Entry             string
-	Delivery          Delivery
-	Payment           Payment
-	Items             []Item
-	Locale            string
-	InternalSignature string
-	CustomerID        string
-	DeliveryService   string
-	Shardkey          string
-	SmID              int
-	DateCreated       time.Time
-	OofShard          string
-}
-
-type Delivery struct {
-	Name    string
-	Phone   string
-	Zip     string
-	City    string
-	Address string
-	Region  string
-	Email   string
-}
-
-type Payment struct {
-	Transaction  string
-	RequestID    string
-	Currency     string
-	Provider     string
-	Amount       int
-	PaymentDt    int
-	Bank         string
-	DeliveryCost int
-	GoodsTotal   int
-	CustomFee    int
-}
-
-type Item struct {
-	ChrtID      int
-	TrackNumber string
-	Price       int
-	Rid         string
-	Name        string
-	Sale        int
-	Size        string
-	TotalPrice  int
-	NmID        int
-	Brand       string
-	Status      int
+	OrderUID          string    `json:"order_uid"`
+	TrackNumber       string    `json:"track_number"`
+	Entry             string    `json:"entry"`
+	Delivery          Delivery  `json:"delivery"`
+	Payment           Payment   `json:"payment"`
+	Items             []Item    `json:"items"`
+	Locale            string    `json:"locale"`
+	InternalSignature string    `json:"internal_signature"`
+	CustomerID        string    `json:"customer_id"`
+	DeliveryService   string    `json:"delivery_service"`
+	Shardkey          string    `json:"shardkey"`
+	SmID              int       `json:"sm_id"`
+	DateCreated       time.Time `json:"date_created"`
+	OofShard          string    `json:"oof_shard"`
 }

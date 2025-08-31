@@ -22,7 +22,6 @@ type Consumer struct {
 	consumerNumber int
 }
 
-// Констурктор для создания нового консьюмера
 func NewConsumer(handler Handler, brokerAddress []string, topic, consumerGroup string, consumerNumber int) (*Consumer, error) {
 	cfg := &kafka.ConfigMap{
 		"bootstrap.servers":        strings.Join(brokerAddress, ","),

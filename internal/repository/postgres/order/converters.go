@@ -1,0 +1,81 @@
+package order
+
+import (
+	"database/sql"
+	"time"
+
+	"WBTECH_L0/internal/domain"
+)
+
+type OrderRow struct {
+	OrderUID          string         `db:"order_uid"`
+	TrackNumber       string         `db:"track_number"`
+	Entry             string         `db:"entry"`
+	Locale            string         `db:"locale"`
+	InternalSignature sql.NullString `db:"internal_signature"`
+	CustomerID        string         `db:"customer_id"`
+	DeliveryService   string         `db:"delivery_service"`
+	Shardkey          string         `db:"shardkey"`
+	SmID              int            `db:"sm_id"`
+	DateCreated       time.Time      `db:"date_created"`
+	OofShard          string         `db:"oof_shard"`
+}
+
+// Values возвращает значения полей (для INSERT/UPDATE).
+func (row *OrderRow) Values() []any {
+	return []any{
+		row.OrderUID,
+		row.TrackNumber,
+		row.Entry,
+		row.Locale,
+		row.InternalSignature,
+		row.CustomerID,
+		row.DeliveryService,
+		row.Shardkey,
+		row.SmID,
+		row.DateCreated,
+		row.OofShard,
+	}
+}
+
+// ToModel конвертирует OrderRow в доменную модель domain.Order.
+func ToModel(r *OrderRow) *domain.Order {
+	if r == nil {
+		return nil
+	}
+
+	return &domain.Order{
+		OrderUID:          r.OrderUID,
+		TrackNumber:       r.TrackNumber,
+		Entry:             r.Entry,
+		Locale:            r.Locale,
+		InternalSignature: r.InternalSignature.String,
+		CustomerID:        r.CustomerID,
+		DeliveryService:   r.DeliveryService,
+		Shardkey:          r.Shardkey,
+		SmID:              r.SmID,
+		DateCreated:       r.DateCreated,
+		OofShard:          r.OofShard,
+	}
+}
+
+// FromModel конвертирует доменную модель в OrderRow (для INSERT/UPDATE).
+func FromModel(m *domain.Order) OrderRow {
+	if m == nil {
+		return OrderRow{}
+	}
+
+	return OrderRow{
+		OrderUID:          m.OrderUID,
+		TrackNumber:       m.TrackNumber,
+		Entry:             m.Entry,
+		Locale:            m.Locale,
+		InternalSignature: sql.NullString{String: m.InternalSignature, Valid: m.InternalSignature != ""},
+		CustomerID:        m.CustomerID,
+		DeliveryService:   m.DeliveryService,
+		Shardkey:          m.Shardkey,
+		SmID:              m.SmID,
+		DateCreated:       m.DateCreated,
+		OofShard:          m.OofShard,
+	}
+}

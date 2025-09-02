@@ -1,8 +1,11 @@
 package repository
 
-import "WBTECH_L0/internal/domain"
+import (
+	"WBTECH_L0/internal/domain"
+	"context"
+)
 
 type Payment interface {
-	Post(payment domain.Payment) error
-	Get(paymentId string) (*domain.Payment, error)
+	CreatePayment(ctx context.Context, payment *domain.Payment) error
+	GetPayment(ctx context.Context, transaction string) (*domain.Payment, error)
 }

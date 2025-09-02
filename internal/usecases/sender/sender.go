@@ -1,7 +1,7 @@
-package order
+package sender
 
 import (
-	"WBTECH_L0/internal/domain/dto"
+	"WBTECH_L0/internal/domain"
 	"encoding/json"
 	"github.com/sirupsen/logrus"
 	"time"
@@ -26,7 +26,7 @@ func NewSender(producer Producer) *Sender {
 }
 
 // SendOrders отправляет заказы в указанный топик Kafka
-func (s *Sender) SendOrders(orders []*dto.OrderDTO, topic string) error {
+func (s *Sender) SendOrders(orders []*domain.Order, topic string) error {
 	logrus.Info("Запуск отправки заказов...")
 
 	for i, order := range orders {
@@ -59,7 +59,7 @@ func (s *Sender) SendOrders(orders []*dto.OrderDTO, topic string) error {
 }
 
 // isInvalidOrder проверяет, является ли заказ невалидным
-func (s *Sender) isInvalidOrder(order *dto.OrderDTO) bool {
+func (s *Sender) isInvalidOrder(order *domain.Order) bool {
 	if order.OrderUID == "" {
 		return true
 	}

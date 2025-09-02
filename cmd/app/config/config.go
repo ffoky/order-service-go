@@ -28,7 +28,6 @@ func MustLoad(cfgPath string, cfg any) {
 		log.Fatalf("config file does not exist by this path: %s", cfgPath)
 	}
 
-	// ИСПРАВЛЕНО: добавлена обработка переменных окружения
 	if err := cleanenv.ReadConfig(cfgPath, cfg); err != nil {
 		log.Fatalf("error reading config: %s", err)
 	}

@@ -1,12 +1,12 @@
-package order
+package sender
 
 import (
 	"WBTECH_L0/internal/domain"
-	"WBTECH_L0/internal/domain/dto"
 	"fmt"
-	"github.com/brianvoe/gofakeit/v7"
 	"math/rand"
 	"time"
+
+	"github.com/brianvoe/gofakeit/v7"
 )
 
 var (
@@ -30,11 +30,11 @@ func NewGenerator() *Generator {
 }
 
 // GenerateOrders генерирует указанное количество заказов
-func (g *Generator) GenerateOrders(count int) []*dto.OrderDTO {
-	orders := make([]*dto.OrderDTO, 0, count)
+func (g *Generator) GenerateOrders(count int) []*domain.Order {
+	orders := make([]*domain.Order, 0, count)
 
 	for i := 0; i < count; i++ {
-		var order *dto.OrderDTO
+		var order *domain.Order
 
 		// Иногда генерируем невалидные заказы (5% случаев)
 		if rand.Intn(20) < 1 {
@@ -80,7 +80,7 @@ func (g *Generator) generateInvalidOrder() *domain.Order {
 	case 1:
 		order.Payment.Amount = -100 // отрицательная сумма
 	case 2:
-		order.Items = []dto.ItemDTO{} // пустой массив товаров
+		order.Items = []domain.Item{} // пустой массив товаров
 	case 3:
 		order.Delivery.Email = "invalid-email" // невалидный email
 	}
@@ -97,13 +97,13 @@ func (g *Generator) generateOrder() *domain.Order {
 
 	// Генерируем товары (от 1 до 5 товаров)
 	itemCount := rand.Intn(5) + 1
-	items := make([]dto.ItemDTO, itemCount)
-	goodsTotal := 0
+	items := make([]domain.Item, itemCount)
+	goodsTotal := 0.0
 
 	for i := 0; i < itemCount; i++ {
-		price := rand.Intn(5000) + 100 // цена от 100 до 5100
-		sale := rand.Intn(70)          // скидка от 0 до 70%
-		totalPrice := price - (price * sale / 100)
+		price := float64(rand.Intn(5000) + 100) // цена от 100 до 5100
+		sale := rand.Intn(70)                   // скидка от 0 до 70%
+		totalPrice := price - (price * float64(sale) / 100)
 		goodsTotal += totalPrice
 
 		items[i] = domain.Item{
@@ -115,20 +115,20 @@ func (g *Generator) generateOrder() *domain.Order {
 			Sale:        sale,
 			Size:        gofakeit.RandomString(sizes),
 			TotalPrice:  totalPrice,
-			NmID:        rand.Intn(10000000) + 1000000,
+			NmID:        int64(rand.Intn(10000000) + 1000000),
 			Brand:       gofakeit.RandomString(brands),
 			Status:      []int{200, 201, 202, 404}[rand.Intn(4)],
 		}
 	}
 
-	deliveryCost := rand.Intn(2000) + 500
+	deliveryCost := float64(rand.Intn(2000) + 500)
 	amount := goodsTotal + deliveryCost
 
-	order := &dto.OrderDTO{
+	order := &domain.Order{
 		OrderUID:    orderUID,
 		TrackNumber: trackNumber,
 		Entry:       gofakeit.RandomString(entries),
-		Delivery: dto.DeliveryDTO{
+		Delivery: domain.Delivery{
 			Name:    gofakeit.Name(),
 			Phone:   gofakeit.Phone(),
 			Zip:     gofakeit.Zip(),
@@ -137,7 +137,7 @@ func (g *Generator) generateOrder() *domain.Order {
 			Region:  gofakeit.State(),
 			Email:   gofakeit.Email(),
 		},
-		Payment: dto.PaymentDTO{
+		Payment: domain.Payment{
 			Transaction:  orderUID, // transaction совпадает с order_uid
 			RequestID:    "",       // оставляем пустым как в примере
 			Currency:     gofakeit.RandomString(currencies),
@@ -147,7 +147,7 @@ func (g *Generator) generateOrder() *domain.Order {
 			Bank:         gofakeit.RandomString(banks),
 			DeliveryCost: deliveryCost,
 			GoodsTotal:   goodsTotal,
-			CustomFee:    rand.Intn(500), // от 0 до 500
+			CustomFee:    float64(rand.Intn(500)), // от 0 до 500
 		},
 		Items:             items,
 		Locale:            gofakeit.RandomString(locales),

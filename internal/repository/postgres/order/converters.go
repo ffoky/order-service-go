@@ -9,6 +9,8 @@ import (
 
 type OrderRow struct {
 	OrderUID          string         `db:"order_uid"`
+	DeliveryID        int64          `db:"delivery_id"`
+	PaymentID         string         `db:"payment_id"`
 	TrackNumber       string         `db:"track_number"`
 	Entry             string         `db:"entry"`
 	Locale            string         `db:"locale"`
@@ -25,6 +27,8 @@ type OrderRow struct {
 func (row *OrderRow) Values() []any {
 	return []any{
 		row.OrderUID,
+		row.DeliveryID, // <-- ДОБАВИТЬ
+		row.PaymentID,  // <-- ДОБАВИТЬ
 		row.TrackNumber,
 		row.Entry,
 		row.Locale,
@@ -60,13 +64,15 @@ func ToModel(r *OrderRow) *domain.Order {
 }
 
 // FromModel конвертирует доменную модель в OrderRow (для INSERT/UPDATE).
-func FromModel(m *domain.Order) OrderRow {
+func FromModel(m *domain.Order, deliveryID int64, paymentID string) OrderRow {
 	if m == nil {
 		return OrderRow{}
 	}
 
 	return OrderRow{
 		OrderUID:          m.OrderUID,
+		DeliveryID:        deliveryID,
+		PaymentID:         paymentID,
 		TrackNumber:       m.TrackNumber,
 		Entry:             m.Entry,
 		Locale:            m.Locale,

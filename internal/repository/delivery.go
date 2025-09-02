@@ -1,8 +1,11 @@
 package repository
 
-import "WBTECH_L0/internal/domain"
+import (
+	"WBTECH_L0/internal/domain"
+	"context"
+)
 
 type Delivery interface {
-	Post(delivery domain.Delivery) error
-	Get(deliveryId int) (*domain.Delivery, error)
+	CreateDelivery(ctx context.Context, delivery *domain.Delivery) (int64, error)
+	GetDelivery(ctx context.Context, deliveryID int64) (*domain.Delivery, error)
 }

@@ -1,43 +1,28 @@
-# Папки с бинарниками
-BIN_DIR := bin
+.PHONY: up build-app rebuild-app up-without-app up-app logs-app stop down clean
 
-# Пути к main.go
-PRODUCER := ./cmd/producer
-CONSUMER := ./cmd/consumer
+up:
+	docker compose up -d
 
-# Имена бинарников
-PRODUCER_BIN := $(BIN_DIR)/producer
-CONSUMER_BIN := $(BIN_DIR)/consumer
+build-app:
+	docker compose build app
 
-.PHONY: all run-producer run-consumer build-producer build-consumer clean
+rebuild-app:
+	docker compose up --build --force-recreate -d app
 
-all: build-producer build-consumer
+up-without-app:
+	docker compose up -d db zookeeper kafka kafka-ui
 
-# =========================
-# Сборка
-# =========================
-build-producer:
-	@echo "🚀 Building producer..."
-	@go build -o $(PRODUCER_BIN) $(PRODUCER)
+up-app:
+	docker compose up -d app
 
-build-consumer:
-	@echo "🚀 Building consumer..."
-	@go build -o $(CONSUMER_BIN) $(CONSUMER)
+logs-app:
+	docker compose logs app
 
-# =========================
-# Запуск без сохранения бинарника
-# =========================
-run-producer:
-	@echo "▶️ Running producer..."
-	@go run $(PRODUCER)
+stop:
+	docker compose stop
 
-run-consumer:
-	@echo "▶️ Running consumer..."
-	@go run $(CONSUMER)
+down:
+	docker compose down
 
-# =========================
-# Удалить бинарники
-# =========================
 clean:
-	@echo "🧹 Cleaning binaries..."
-	@rm -rf $(BIN_DIR)/*
+	docker compose down -v

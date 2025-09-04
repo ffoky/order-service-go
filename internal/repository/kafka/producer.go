@@ -17,7 +17,6 @@ type Producer struct {
 	producer *kafka.Producer
 }
 
-// Конструктор для producer
 func NewProducer(brokerAddress []string) (*Producer, error) {
 	conf := &kafka.ConfigMap{
 		"bootstrap.servers": strings.Join(brokerAddress, ","),

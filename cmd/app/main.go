@@ -2,8 +2,9 @@ package main
 
 import (
 	http3 "WBTECH_L0/internal/controller/http"
-	"WBTECH_L0/internal/repository/handler"
+	"WBTECH_L0/internal/repository/cache"
 	"WBTECH_L0/internal/repository/kafka"
+	"WBTECH_L0/internal/repository/kafka/handler"
 	"WBTECH_L0/internal/repository/postgres"
 	"WBTECH_L0/internal/repository/postgres/delivery"
 	"WBTECH_L0/internal/repository/postgres/items"
@@ -18,6 +19,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sirupsen/logrus"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -69,8 +71,17 @@ func main() {
 		*paymentRepository,
 		*itemsRepository,
 	)
+	orderCache := cache.NewCache()
+	logrus.Info("Cache created successfully")
 
-	orderUseCase := service.NewOrder(orderRepository)
+	orderUseCase := service.NewCachedOrder(orderRepository, orderCache)
+
+	if err := orderUseCase.InitializeCache(ctx); err != nil {
+		logrus.Errorf("Failed to initialize cache: %v", err)
+	} else {
+		stats := orderUseCase.GetCacheStats()
+		logrus.Infof("Cache initialized successfully with %v orders", stats["cache_size"])
+	}
 
 	h := handler.NewHandler(orderUseCase)
 	address := []string{"kafka:29092"}
@@ -99,17 +110,34 @@ func main() {
 	orderHandlers := http3.NewOrderHandler(orderUseCase)
 	orderHandlers.WithOrderHandlers(r)
 
+	fs := http.FileServer(http.Dir("./static"))
+
+	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "static/index.html")
+	})
+
+	r.Handle("/*", http.StripPrefix("/", fs))
+
 	go func() {
-		logrus.Infof("HTTP server started on :8080")
-		if err := http2.CreateAndRunServer(r, ":8080"); err != nil {
+		logrus.Infof("HTTP server started on :8081")
+		logrus.Info("Open http://localhost:8081 in your browser to see the demo page")
+		if err := http2.CreateAndRunServer(r, ":8081"); err != nil {
 			logrus.Fatal(err)
 		}
 	}()
 
+	stats := orderUseCase.GetCacheStats()
+	logrus.Infof("Application started successfully. Cache stats: %+v", stats)
+
+	// Graceful shutdown
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 	<-sigChan
 
 	logrus.Println("Shutting down...")
 	consumer.Stop()
+
+	finalStats := orderUseCase.GetCacheStats()
+	logrus.Infof("Final cache stats: %+v", finalStats)
+
 }

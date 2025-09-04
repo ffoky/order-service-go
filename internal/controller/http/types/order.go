@@ -15,7 +15,3 @@ func CreateGetOrderByUIDHanlderRequest(r *http.Request) (GetOrderHandlerRequest,
 	}
 	return GetOrderHandlerRequest{UID: uid}, nil
 }
-
-type GetOrderHandlerResponse struct {
-	// тут просто order domain.Order так разве нельзя??
-}

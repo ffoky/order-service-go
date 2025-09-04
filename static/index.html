@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Order Service</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 40px auto; }
+        h1 { font-size: 22px; }
+        input, button { padding: 8px; font-size: 14px; }
+        #result { white-space: pre-wrap; background: #f9f9f9; padding: 10px; border: 1px solid #ddd; margin-top: 15px; }
+    </style>
+</head>
+<body>
+<h1>Поиск заказа</h1>
+<input id="orderId" type="text" placeholder="Введите Order ID">
+<button onclick="fetchOrder()">Найти</button>
+
+<div id="result"></div>
+
+<script>
+    async function fetchOrder() {
+        const id = document.getElementById("orderId").value.trim();
+        const resultDiv = document.getElementById("result");
+
+        if (!id) {
+            resultDiv.textContent = "Введите ID заказа";
+            return;
+        }
+
+        try {
+            const res = await fetch(`/order/${id}`);
+            const data = await res.json();
+            resultDiv.textContent = JSON.stringify(data, null, 2);
+        } catch (err) {
+            resultDiv.textContent = "Ошибка при запросе: " + err;
+        }
+    }
+</script>
+</body>
+</html>

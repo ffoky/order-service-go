@@ -10,12 +10,12 @@ import (
 )
 
 type Handler struct {
-	orderUC usecases.Order
+	order usecases.Order
 }
 
-func NewHandler(orderUC usecases.Order) *Handler {
+func NewHandler(order usecases.Order) *Handler {
 	return &Handler{
-		orderUC: orderUC,
+		order: order,
 	}
 }
 
@@ -30,7 +30,7 @@ func (h *Handler) HandleMessage(message []byte, topic kafka.TopicPartition, cn i
 	}
 
 	ctx := context.Background()
-	_, err := h.orderUC.Create(ctx, &order)
+	_, err := h.order.Create(ctx, &order)
 	if err != nil {
 		logrus.Errorf("failed to save order %s: %v", order.OrderUID, err)
 		return err

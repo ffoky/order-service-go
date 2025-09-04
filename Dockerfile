@@ -42,5 +42,6 @@ COPY --from=build /build/app ./app
 RUN chmod +x /app/app
 COPY --from=build /build/cmd/app/config/config.yml ./config.yml
 COPY --from=build /build/.env .env
+COPY --from=build /build/static ./static
 
 CMD ["./app", "--config=/app/config.yml"]

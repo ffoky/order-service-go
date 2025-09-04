@@ -11,7 +11,7 @@ func (r *Repository) CreateDelivery(ctx context.Context, delivery *domain.Delive
 
 	query := r.SB.
 		Insert(deliveriesTable).
-		Columns(deliveriesTableColumns[1:]...). // исключаем delivery_id, он автогенерируется
+		Columns(deliveriesTableColumns[1:]...).
 		Values(row.ValuesWithoutID()...).
 		Suffix("RETURNING " + deliveriesTableColumnID)
 

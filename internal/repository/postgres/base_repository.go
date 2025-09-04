@@ -20,7 +20,6 @@ type Sqlizer interface {
 	ToSql() (sql string, args []interface{}, err error)
 }
 
-// BaseRepository содержит общие методы для всех репозиториев
 type BaseRepository struct {
 	Pool Poolx
 	SB   squirrel.StatementBuilderType

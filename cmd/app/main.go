@@ -1,10 +1,9 @@
 package main
 
 import (
-	"log"
-
 	appConfig "WBTECH_L0/config"
 	"WBTECH_L0/internal/app"
+	"log"
 )
 
 func main() {

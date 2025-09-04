@@ -11,18 +11,12 @@ const (
 	noTimeout      = -1
 )
 
-type Handler interface {
-	HandleMessage(message []byte, topic kafka.TopicPartition, cn int) error
-}
-
 type Consumer struct {
-	consumer       *kafka.Consumer
-	handler        Handler
-	stop           bool
-	consumerNumber int
+	consumer *kafka.Consumer
+	stop     bool
 }
 
-func NewConsumer(handler Handler, brokerAddress []string, topic, consumerGroup string, consumerNumber int) (*Consumer, error) {
+func NewConsumer(brokerAddress []string, topic, consumerGroup string) (*Consumer, error) {
 	cfg := &kafka.ConfigMap{
 		"bootstrap.servers":        strings.Join(brokerAddress, ","),
 		"group.id":                 consumerGroup,
@@ -32,51 +26,64 @@ func NewConsumer(handler Handler, brokerAddress []string, topic, consumerGroup s
 		"auto.commit.interval.ms":  5000,
 		"auto.offset.reset":        "earliest",
 	}
+
 	c, err := kafka.NewConsumer(cfg)
 	if err != nil {
-		//TODO обработать ошибку
 		return nil, err
 	}
-	//TODO обработать ошибку
+
 	if err = c.Subscribe(topic, nil); err != nil {
 		return nil, err
 	}
+
 	return &Consumer{
-		consumer:       c,
-		handler:        handler,
-		consumerNumber: consumerNumber,
+		consumer: c,
 	}, nil
 }
 
-func (c *Consumer) Start() {
+func (c *Consumer) StartReading(messagesChan chan<- []byte) {
+	logrus.Info("Kafka consumer started reading messages...")
+
 	for {
 		if c.stop {
 			break
 		}
+
 		kafkaMsg, err := c.consumer.ReadMessage(noTimeout)
 		if err != nil {
-			logrus.Error(err)
+			logrus.Errorf("Error reading message from Kafka: %v", err)
+			continue
 		}
+
 		if kafkaMsg == nil {
 			continue
 		}
-		if err = c.handler.HandleMessage(kafkaMsg.Value, kafkaMsg.TopicPartition, c.consumerNumber); err != nil {
-			logrus.Error(err)
-			continue
+
+		select {
+		case messagesChan <- kafkaMsg.Value:
+			logrus.Debugf("Message sent to workers channel from partition %d, offset %d",
+				kafkaMsg.TopicPartition.Partition, kafkaMsg.TopicPartition.Offset)
+		default:
+			logrus.Warn("Workers channel is full, message dropped")
 		}
+
 		if _, err = c.consumer.StoreMessage(kafkaMsg); err != nil {
-			logrus.Error(err)
-			continue
+			logrus.Errorf("Error storing message: %v", err)
 		}
 	}
+
+	logrus.Info("Kafka consumer stopped reading messages")
 }
 
 func (c *Consumer) Stop() error {
+	logrus.Info("Stopping Kafka consumer...")
 	c.stop = true
+
 	if _, err := c.consumer.Commit(); err != nil {
-		//TODO обработать ошибку
+		logrus.Errorf("Error committing offset: %v", err)
 		return err
 	}
-	logrus.Infof("Commited offset")
+
+	logrus.Info("Committed offset")
 	return c.consumer.Close()
 }

@@ -1,33 +1,37 @@
 package app
 
 import (
-	"WBTECH_L0/internal/usecases/generator"
+	"WBTECH_L0/internal/usecases/kafka/generator"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	appConfig "WBTECH_L0/config"
 	pkgHttp "WBTECH_L0/internal/controller/http"
 	"WBTECH_L0/internal/repository/cache"
 	"WBTECH_L0/internal/repository/kafka"
-	"WBTECH_L0/internal/repository/kafka/handler"
 	"WBTECH_L0/internal/repository/postgres"
 	"WBTECH_L0/internal/repository/postgres/delivery"
 	"WBTECH_L0/internal/repository/postgres/items"
 	"WBTECH_L0/internal/repository/postgres/order"
 	"WBTECH_L0/internal/repository/postgres/payment"
-	sender "WBTECH_L0/internal/usecases/sender"
+	sender "WBTECH_L0/internal/usecases/kafka/sender"
 	"WBTECH_L0/internal/usecases/service"
+	"WBTECH_L0/internal/usecases/worker"
+	pkgHttpServer "WBTECH_L0/pkg/http"
 	pkgPostgres "WBTECH_L0/pkg/postgres"
 	"context"
 	"github.com/go-chi/chi/v5"
 	"github.com/sirupsen/logrus"
-	"net/http"
+	"sync"
 )
 
 const (
 	ordersNumToGenerate = 10
-	consumerNumber      = 1
+	workersCount        = 5
+	messageBufferSize   = 100
+	shutdownTimeout     = 5 * time.Second
 )
 
 func Run(cfg *appConfig.AppConfig) {
@@ -73,7 +77,18 @@ func Run(cfg *appConfig.AppConfig) {
 		logrus.Infof("Cache initialized successfully with %v orders", stats["cache_size"])
 	}
 
-	kafkaHandler := handler.NewHandler(orderUseCase)
+	messagesChan := make(chan []byte, messageBufferSize)
+
+	var wg sync.WaitGroup
+	for i := 0; i < workersCount; i++ {
+		wg.Add(1)
+		go func(workerID int) {
+			defer wg.Done()
+			w := worker.NewWorker(workerID, messagesChan, orderUseCase)
+			w.Start()
+		}(i + 1)
+	}
+	logrus.Infof("Started %d workers", workersCount)
 
 	producer, err := kafka.NewProducer(cfg.KafkaConfig.Brokers)
 	if err != nil {
@@ -92,36 +107,33 @@ func Run(cfg *appConfig.AppConfig) {
 	}
 
 	consumer, err := kafka.NewConsumer(
-		kafkaHandler,
 		cfg.KafkaConfig.Brokers,
 		cfg.KafkaConfig.Topic,
 		cfg.KafkaConfig.GroupID,
-		consumerNumber,
 	)
 	if err != nil {
 		logrus.Fatalf("Failed to create Kafka consumer: %v", err)
 	}
 
-	go consumer.Start()
+	go func() {
+		logrus.Info("Starting Kafka message reader...")
+		consumer.StartReading(messagesChan)
+	}()
 
 	r := chi.NewRouter()
 	orderHandlers := pkgHttp.NewOrderHandler(orderUseCase)
+	staticHandlers := pkgHttp.NewStaticHandler()
+
 	orderHandlers.WithOrderHandlers(r)
+	staticHandlers.WithStaticHandlers(r)
 
-	fs := http.FileServer(http.Dir("./static"))
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "static/index.html")
-	})
-	r.Handle("/static/*", http.StripPrefix("/static/", fs))
+	httpServer, err := pkgHttpServer.CreateServerWithShutdown(r, cfg.HTTPConfig.Address)
+	if err != nil {
+		logrus.Fatalf("Failed to create HTTP server: %v", err)
+	}
 
-	go func() {
-		logrus.Infof("HTTP server starting on %s", cfg.HTTPConfig.Address)
-		logrus.Infof("Open http://%s in your browser to see the demo page", "localhost:8081")
-
-		if err := http.ListenAndServe(cfg.HTTPConfig.Address, r); err != nil && err != http.ErrServerClosed {
-			logrus.Fatalf("HTTP server failed: %v", err)
-		}
-	}()
+	logrus.Infof("HTTP server starting on %s", cfg.HTTPConfig.Address)
+	logrus.Infof("Open http://%s in your browser to see the demo page", "localhost:8081")
 
 	stats := orderUseCase.GetCacheStats()
 	logrus.Infof("Application started successfully. Cache stats: %+v", stats)
@@ -136,9 +148,24 @@ func Run(cfg *appConfig.AppConfig) {
 
 	logrus.Println("Shutting down gracefully...")
 
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+	defer cancel()
+
+	if err := pkgHttpServer.ShutdownServer(shutdownCtx, httpServer); err != nil {
+		logrus.Errorf("Error shutting down HTTP server: %v", err)
+	} else {
+		logrus.Info("HTTP server stopped gracefully")
+	}
+
 	if err := consumer.Stop(); err != nil {
 		logrus.Errorf("Error stopping consumer: %v", err)
+	} else {
+		logrus.Info("Kafka consumer stopped gracefully")
 	}
+
+	close(messagesChan)
+	wg.Wait()
+	logrus.Info("All workers stopped")
 
 	logrus.Info("Application shutdown completed")
 }

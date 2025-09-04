@@ -1,10 +1,9 @@
 package order
 
 import (
+	"WBTECH_L0/internal/domain"
 	"database/sql"
 	"time"
-
-	"WBTECH_L0/internal/domain"
 )
 
 type OrderRow struct {
@@ -23,12 +22,11 @@ type OrderRow struct {
 	OofShard          string         `db:"oof_shard"`
 }
 
-// Values возвращает значения полей (для INSERT/UPDATE).
 func (row *OrderRow) Values() []any {
 	return []any{
 		row.OrderUID,
-		row.DeliveryID, // <-- ДОБАВИТЬ
-		row.PaymentID,  // <-- ДОБАВИТЬ
+		row.DeliveryID,
+		row.PaymentID,
 		row.TrackNumber,
 		row.Entry,
 		row.Locale,
@@ -42,7 +40,6 @@ func (row *OrderRow) Values() []any {
 	}
 }
 
-// ToModel конвертирует OrderRow в доменную модель domain.Order.
 func ToModel(r *OrderRow) *domain.Order {
 	if r == nil {
 		return nil
@@ -63,7 +60,6 @@ func ToModel(r *OrderRow) *domain.Order {
 	}
 }
 
-// FromModel конвертирует доменную модель в OrderRow (для INSERT/UPDATE).
 func FromModel(m *domain.Order, deliveryID int64, paymentID string) OrderRow {
 	if m == nil {
 		return OrderRow{}

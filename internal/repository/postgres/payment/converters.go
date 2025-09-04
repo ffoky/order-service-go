@@ -18,7 +18,6 @@ type PaymentRow struct {
 	CustomFee    float64        `db:"custom_fee"`
 }
 
-// Values возвращает значения полей (для INSERT/UPDATE).
 func (row *PaymentRow) Values() []any {
 	return []any{
 		row.Transaction,
@@ -34,7 +33,6 @@ func (row *PaymentRow) Values() []any {
 	}
 }
 
-// ToModel конвертирует PaymentRow в доменную модель domain.Payment.
 func ToModel(r *PaymentRow) *domain.Payment {
 	if r == nil {
 		return nil
@@ -59,7 +57,6 @@ func ToModel(r *PaymentRow) *domain.Payment {
 	}
 }
 
-// FromModel конвертирует доменную модель в PaymentRow (для INSERT/UPDATE).
 func FromModel(m *domain.Payment) PaymentRow {
 	if m == nil {
 		return PaymentRow{}

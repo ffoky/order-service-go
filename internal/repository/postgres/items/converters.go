@@ -19,7 +19,6 @@ type ItemRow struct {
 	Status      int            `db:"status"`
 }
 
-// Values возвращает значения полей (для INSERT/UPDATE).
 func (row *ItemRow) Values() []any {
 	return []any{
 		row.ChrtID,
@@ -36,7 +35,6 @@ func (row *ItemRow) Values() []any {
 	}
 }
 
-// ToModel конвертирует ItemRow в доменную модель domain.Item.
 func ToModel(r *ItemRow) *domain.Item {
 	if r == nil {
 		return nil
@@ -67,7 +65,6 @@ func ToModel(r *ItemRow) *domain.Item {
 	}
 }
 
-// FromModel конвертирует доменную модель в ItemRow (для INSERT/UPDATE).
 func FromModel(m *domain.Item) ItemRow {
 	if m == nil {
 		return ItemRow{}

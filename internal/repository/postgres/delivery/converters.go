@@ -15,7 +15,6 @@ type DeliveryRow struct {
 	Email      string `db:"email"`
 }
 
-// Values возвращает все значения полей (для SELECT с RETURNING).
 func (row *DeliveryRow) Values() []any {
 	return []any{
 		row.DeliveryID,
@@ -29,7 +28,6 @@ func (row *DeliveryRow) Values() []any {
 	}
 }
 
-// ValuesWithoutID возвращает значения полей без delivery_id (для INSERT).
 func (row *DeliveryRow) ValuesWithoutID() []any {
 	return []any{
 		row.Name,
@@ -42,7 +40,6 @@ func (row *DeliveryRow) ValuesWithoutID() []any {
 	}
 }
 
-// ToModel конвертирует DeliveryRow в доменную модель domain.Delivery.
 func ToModel(r *DeliveryRow) *domain.Delivery {
 	if r == nil {
 		return nil
@@ -58,7 +55,6 @@ func ToModel(r *DeliveryRow) *domain.Delivery {
 	}
 }
 
-// FromModel конвертирует доменную модель в DeliveryRow (для INSERT/UPDATE).
 func FromModel(m *domain.Delivery) DeliveryRow {
 	if m == nil {
 		return DeliveryRow{}

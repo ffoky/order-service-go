@@ -1,17 +1,15 @@
 package kafka
 
 import (
-	"errors"
 	"fmt"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/sirupsen/logrus"
 	"strings"
 )
 
 const (
-	flushTimeout = 5000 // ms
+	flushTimeout = 5000
 )
-
-var errUnknownType = errors.New("unknown event Type")
 
 type Producer struct {
 	producer *kafka.Producer
@@ -25,7 +23,11 @@ func NewProducer(brokerAddress []string) (*Producer, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error with new producer: %w", err)
 	}
-	return &Producer{producer: p}, nil
+
+	producer := &Producer{producer: p}
+	go producer.handleDeliveryReports()
+
+	return producer, nil
 }
 
 func (p *Producer) Produce(message, topic string) error {
@@ -37,18 +39,21 @@ func (p *Producer) Produce(message, topic string) error {
 		Value: []byte(message),
 		Key:   nil,
 	}
-	kafkaChan := make(chan kafka.Event)
-	if err := p.producer.Produce(kafkaMsg, kafkaChan); err != nil {
-		return err
-	}
-	e := <-kafkaChan
-	switch event := e.(type) {
-	case *kafka.Message:
-		return nil
-	case kafka.Error:
-		return event
-	default:
-		return errUnknownType
+
+	return p.producer.Produce(kafkaMsg, nil)
+}
+
+func (p *Producer) handleDeliveryReports() {
+	for e := range p.producer.Events() {
+		switch ev := e.(type) {
+		case *kafka.Message:
+			if ev.TopicPartition.Error != nil {
+				logrus.Errorf("Delivery failed: %v", ev.TopicPartition.Error)
+			} else {
+				logrus.Debugf("Message delivered to partition %d at offset %v",
+					ev.TopicPartition.Partition, ev.TopicPartition.Offset)
+			}
+		}
 	}
 }
 

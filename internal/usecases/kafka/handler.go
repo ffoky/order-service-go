@@ -1,4 +1,4 @@
-package handler
+package processor
 
 import (
 	"WBTECH_L0/internal/domain"

@@ -60,18 +60,6 @@ func (h *OrderHandler) getOrderHandler(w http.ResponseWriter, r *http.Request) {
 	logrus.Infof("Order %s recieved from %s in %s", orderID, source, time.Since(startTime))
 }
 
-func (h *OrderHandler) getCacheStatsHandler(w http.ResponseWriter, r *http.Request) {
-	stats := h.service.GetCacheStats()
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
-	if err := json.NewEncoder(w).Encode(stats); err != nil {
-		logrus.Errorf("Failed to encode cache stats: %v", err)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-	}
-}
-
 func (h *OrderHandler) sendErrorResponse(w http.ResponseWriter, message string, statusCode int, fromCache bool, startTime time.Time) {
 	response := OrderResponse{
 		Error: message,

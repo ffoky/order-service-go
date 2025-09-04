@@ -1,3 +1,5 @@
+# Видео 
+
 ## Установка и запуск сервиса
 
 ### Предварительные требования
@@ -66,4 +68,6 @@ docker compose up --build -d
 - Kafka UI: [http://localhost:9020](http://localhost:9020)
 - PostgreSQL: `localhost:5432`
 
+## Схема базы данных 
 
+![img.png](img.png)

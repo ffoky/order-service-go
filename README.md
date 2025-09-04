@@ -1,6 +1,6 @@
 # Видео 
-
-[2025-09-05 00-28-05.mp4](../../Videos/2025-09-05%2000-28-05.mp4)
+Видео весит слишком много, чтобы загрузить прямо в markdown, поэтому залил на youtube
+[https://youtu.be/K9bKpWStBJk](https://www.youtube.com/live/K9bKpWStBJk&feature=youtu.be)
 
 ## Установка и запуск сервиса
 
@@ -71,5 +71,6 @@ docker compose up --build -d
 - PostgreSQL: `localhost:5432`
 
 ## Схема базы данных 
+
 
 ![img.png](img.png)

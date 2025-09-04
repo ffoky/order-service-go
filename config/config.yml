@@ -3,7 +3,7 @@ http:
 
 kafka:
   brokers:
-    - "broker:9092"
+    - "kafka:29092"
   topic: "orders"
   group_id: "order-service"
 
@@ -12,5 +12,7 @@ database:
   port: 5432
   user: "user"
   password: "12345"
-  dbname: "db"
+  dbname: "postgres_db"
   sslmode: "disable"
+
+cache_ttl: "10m"

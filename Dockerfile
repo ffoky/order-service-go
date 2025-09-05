@@ -44,9 +44,8 @@ RUN apt-get update && apt-get install -y \
 
 COPY --from=build /build/app ./app
 RUN chmod +x /app/app
-COPY --from=build /build/config/config.yml ./config/config.yml
 COPY --from=build /build/.env .env
 COPY --from=build /build/static ./static
 COPY --from=build /build/docs ./docs
 
-CMD ["./app", "--config=./config/config.yml"]
+CMD ["./app"]

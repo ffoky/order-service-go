@@ -2,56 +2,38 @@ package config
 
 import (
 	"fmt"
-	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/joho/godotenv"
 	"log"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 )
 
-const (
-	DefaultConfigPath = "./config/config.yml"
-	DefaultKafkaPort  = "9092"
-	DefaultServerPort = "8081"
-)
-
-var (
-	envPostgresHost     = os.Getenv("POSTGRES_HOST")
-	envPostgresPort     = os.Getenv("POSTGRES_PORT")
-	envPostgresUser     = os.Getenv("POSTGRES_USER")
-	envPostgresPassword = os.Getenv("POSTGRES_PASSWORD")
-	envPostgresDB       = os.Getenv("POSTGRES_DB")
-	envServerAddr       = os.Getenv("SERVER_ADDR")
-	envServerPort       = os.Getenv("SERVER_PORT")
-	envKafkaHost        = os.Getenv("KAFKA_HEALTHCHECK_HOST")
-	envKafkaPort        = os.Getenv("KAFKA_PORT")
-	envKafkaTopic       = os.Getenv("KAFKA_TOPIC")
-)
-
 type AppConfig struct {
-	HTTPConfig     `yaml:"http"`
-	KafkaConfig    `yaml:"kafka"`
-	DatabaseConfig `yaml:"database"`
-	CacheTTL       time.Duration `yaml:"cache_ttl"`
+	HTTPConfig     HTTPConfig
+	KafkaConfig    KafkaConfig
+	DatabaseConfig DatabaseConfig
+	CacheTTL       time.Duration
 }
 
 type KafkaConfig struct {
-	Brokers []string `yaml:"brokers"`
-	Topic   string   `yaml:"topic"`
-	GroupID string   `yaml:"group_id"`
+	Brokers []string
+	Topic   string
+	GroupID string
 }
 
 type HTTPConfig struct {
-	Address string `yaml:"address"`
+	Address string
 }
 
 type DatabaseConfig struct {
-	Host     string `yaml:"host"`
-	Port     int    `yaml:"port"`
-	User     string `yaml:"user"`
-	Password string `yaml:"password"`
-	DBName   string `yaml:"dbname"`
-	SSLMode  string `yaml:"sslmode"`
+	Host     string
+	Port     int
+	User     string
+	Password string
+	DBName   string
+	SSLMode  string
 }
 
 func LoadConfig() (*AppConfig, error) {
@@ -59,64 +41,144 @@ func LoadConfig() (*AppConfig, error) {
 		log.Println("No .env file found, using environment variables")
 	}
 
-	var cfg AppConfig
-	if err := cleanenv.ReadConfig(DefaultConfigPath, &cfg); err != nil {
-		return nil, fmt.Errorf("error reading config: %w", err)
-	}
+	cfg := &AppConfig{}
 
-	overrideFromEnv(&cfg)
+	var err error
 
-	return &cfg, nil
-}
-
-func overrideFromEnv(cfg *AppConfig) {
-	if envPostgresHost != "" {
-		cfg.DatabaseConfig.Host = envPostgresHost
-	}
-	if envPostgresPort != "" {
-		cfg.DatabaseConfig.Port = parseInt(envPostgresPort, cfg.DatabaseConfig.Port)
-	}
-	if envPostgresUser != "" {
-		cfg.DatabaseConfig.User = envPostgresUser
-	}
-	if envPostgresPassword != "" {
-		cfg.DatabaseConfig.Password = envPostgresPassword
-	}
-	if envPostgresDB != "" {
-		cfg.DatabaseConfig.DBName = envPostgresDB
-	}
-
-	if envServerAddr != "" {
-		port := envServerPort
-		if port == "" {
-			port = DefaultServerPort
-		}
-		cfg.HTTPConfig.Address = envServerAddr + ":" + port
-	}
-
-	if envKafkaHost != "" {
-		kafkaPort := envKafkaPort
-		if kafkaPort == "" {
-			kafkaPort = DefaultKafkaPort
-		}
-		kafkaAddress := envKafkaHost + ":" + kafkaPort
-
-		if len(cfg.KafkaConfig.Brokers) > 0 {
-			cfg.KafkaConfig.Brokers[0] = kafkaAddress
-		} else {
-			cfg.KafkaConfig.Brokers = []string{kafkaAddress}
-		}
-	}
-	if envKafkaTopic != "" {
-		cfg.KafkaConfig.Topic = envKafkaTopic
-	}
-}
-
-func parseInt(s string, defaultValue int) int {
-	var result int
-	_, err := fmt.Sscanf(s, "%d", &result)
+	cfg.HTTPConfig, err = loadHTTPConfig()
 	if err != nil {
-		return defaultValue
+		return nil, fmt.Errorf("failed to load HTTP config: %w", err)
 	}
-	return result
+
+	cfg.KafkaConfig, err = loadKafkaConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load Kafka config: %w", err)
+	}
+
+	cfg.DatabaseConfig, err = loadDatabaseConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load Database config: %w", err)
+	}
+
+	cacheTTLStr, err := getEnv("CACHE_TTL")
+	if err != nil {
+		return nil, fmt.Errorf("CACHE_TTL is required: %w", err)
+	}
+
+	ttl, err := time.ParseDuration(cacheTTLStr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid CACHE_TTL format: %w", err)
+	}
+	cfg.CacheTTL = ttl
+
+	return cfg, nil
+}
+
+func loadHTTPConfig() (HTTPConfig, error) {
+	addr, err := getEnv("SERVER_ADDR")
+	if err != nil {
+		return HTTPConfig{}, err
+	}
+
+	port, err := getEnv("SERVER_PORT")
+	if err != nil {
+		return HTTPConfig{}, err
+	}
+
+	return HTTPConfig{
+		Address: addr + ":" + port,
+	}, nil
+}
+
+func loadKafkaConfig() (KafkaConfig, error) {
+	var brokers []string
+
+	if brokersEnv := os.Getenv("KAFKA_BROKERS"); brokersEnv != "" {
+		brokers = strings.Split(brokersEnv, ",")
+		for i, b := range brokers {
+			brokers[i] = strings.TrimSpace(b)
+		}
+	} else {
+		host, err := getEnv("KAFKA_HOST")
+		if err != nil {
+			return KafkaConfig{}, err
+		}
+
+		port, err := getEnv("KAFKA_PORT")
+		if err != nil {
+			return KafkaConfig{}, err
+		}
+
+		brokers = []string{host + ":" + port}
+	}
+
+	topic, err := getEnv("KAFKA_TOPIC")
+	if err != nil {
+		return KafkaConfig{}, err
+	}
+
+	groupID, err := getEnv("KAFKA_GROUP_ID")
+	if err != nil {
+		return KafkaConfig{}, err
+	}
+
+	return KafkaConfig{
+		Brokers: brokers,
+		Topic:   topic,
+		GroupID: groupID,
+	}, nil
+}
+
+func loadDatabaseConfig() (DatabaseConfig, error) {
+	host, err := getEnv("POSTGRES_HOST")
+	if err != nil {
+		return DatabaseConfig{}, err
+	}
+
+	portStr, err := getEnv("POSTGRES_PORT")
+	if err != nil {
+		return DatabaseConfig{}, err
+	}
+
+	port, err := strconv.Atoi(portStr)
+	if err != nil {
+		return DatabaseConfig{}, fmt.Errorf("invalid POSTGRES_PORT: %w", err)
+	}
+
+	user, err := getEnv("POSTGRES_USER")
+	if err != nil {
+		return DatabaseConfig{}, err
+	}
+
+	password, err := getEnv("POSTGRES_PASSWORD")
+	if err != nil {
+		return DatabaseConfig{}, err
+	}
+
+	dbname, err := getEnv("POSTGRES_DB")
+	if err != nil {
+		return DatabaseConfig{}, err
+	}
+
+	sslmode, err := getEnv("POSTGRES_SSLMODE")
+	if err != nil {
+		return DatabaseConfig{}, err
+	}
+
+	return DatabaseConfig{
+		Host:     host,
+		Port:     port,
+		User:     user,
+		Password: password,
+		DBName:   dbname,
+		SSLMode:  sslmode,
+	}, nil
+}
+
+func getEnv(key string) (string, error) {
+	value := os.Getenv(key)
+	if value == "" {
+		return "", fmt.Errorf("environment variable %s is required but not set", key)
+	}
+	return value, nil
 }

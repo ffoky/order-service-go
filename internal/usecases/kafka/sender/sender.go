@@ -25,7 +25,6 @@ func NewSender(producer Producer) *Sender {
 
 func (s *Sender) SendOrders(orders []*domain.Order, topic string) error {
 	logrus.Info("Sending orders...")
-
 	var wg sync.WaitGroup
 	semaphore := make(chan struct{}, 10)
 
@@ -35,7 +34,6 @@ func (s *Sender) SendOrders(orders []*domain.Order, topic string) error {
 			defer wg.Done()
 			semaphore <- struct{}{}
 			defer func() { <-semaphore }()
-
 			s.sendOrder(orderIndex+1, ord, topic)
 			time.Sleep(10 * time.Millisecond)
 		}(i, order)

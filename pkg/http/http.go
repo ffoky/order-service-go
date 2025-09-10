@@ -7,14 +7,6 @@ import (
 	"net/http"
 )
 
-func CreateAndRunServer(r chi.Router, addr string) error {
-	httpServer := &http.Server{
-		Addr:    addr,
-		Handler: r,
-	}
-	return httpServer.ListenAndServe()
-}
-
 func CreateServerWithShutdown(r chi.Router, addr string) (*http.Server, error) {
 	httpServer := &http.Server{
 		Addr:    addr,

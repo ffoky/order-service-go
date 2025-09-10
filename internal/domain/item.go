@@ -5,18 +5,20 @@ import (
 	"strings"
 )
 
+// Item представляет товар в заказе
+// @Description Информация о товаре в заказе
 type Item struct {
-	ChrtID      int     `json:"chrt_id"`
-	TrackNumber string  `json:"track_number"`
-	Price       float64 `json:"price"`
-	RID         string  `json:"rid"`
-	Name        string  `json:"name"`
-	Sale        int     `json:"sale"`
-	Size        string  `json:"size"`
-	TotalPrice  float64 `json:"total_price"`
-	NmID        int64   `json:"nm_id"`
-	Brand       string  `json:"brand"`
-	Status      int     `json:"status"`
+	ChrtID      int     `json:"chrt_id" example:"9934930"`
+	TrackNumber string  `json:"track_number" example:"WBILMTESTTRACK"`
+	Price       float64 `json:"price" example:"453"`
+	RID         string  `json:"rid" example:"ab4219087a764ae0btest"`
+	Name        string  `json:"name" example:"Mascaras"`
+	Sale        int     `json:"sale" example:"30"`
+	Size        string  `json:"size" example:"0"`
+	TotalPrice  float64 `json:"total_price" example:"317"`
+	NmID        int64   `json:"nm_id" example:"2389212"`
+	Brand       string  `json:"brand" example:"Vivienne Sabo"`
+	Status      int     `json:"status" example:"202"`
 }
 
 func validateItems(items []Item) error {

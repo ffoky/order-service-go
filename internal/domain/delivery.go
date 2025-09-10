@@ -10,14 +10,16 @@ var (
 	phoneRegex = regexp.MustCompile(`^\+?[1-9]\d{1,14}$`)
 )
 
+// Delivery представляет информацию о доставке
+// @Description Данные о доставке заказа
 type Delivery struct {
-	Name    string `json:"name"`
-	Phone   string `json:"phone"`
-	Zip     string `json:"zip"`
-	City    string `json:"city"`
-	Address string `json:"address"`
-	Region  string `json:"region"`
-	Email   string `json:"email"`
+	Name    string `json:"name" example:"Test Testov"`
+	Phone   string `json:"phone" example:"+9720000000"`
+	Zip     string `json:"zip" example:"2639809"`
+	City    string `json:"city" example:"Kiryat Mozkin"`
+	Address string `json:"address" example:"Ploshad Mira 15"`
+	Region  string `json:"region" example:"Kraiot"`
+	Email   string `json:"email" example:"test@gmail.com"`
 }
 
 func validateDelivery(delivery *Delivery) error {

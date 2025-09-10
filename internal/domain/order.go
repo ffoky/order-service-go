@@ -7,21 +7,23 @@ import (
 	"time"
 )
 
+// Order представляет заказ в системе
+// @Description Полная информация о заказе в системе WBTECH L0
 type Order struct {
-	OrderUID          string    `json:"order_uid"`
-	TrackNumber       string    `json:"track_number"`
-	Entry             string    `json:"entry"`
+	OrderUID          string    `json:"order_uid" example:"b563feb7b2b84b6test"`
+	TrackNumber       string    `json:"track_number" example:"WBILMTESTTRACK"`
+	Entry             string    `json:"entry" example:"WBIL"`
 	Delivery          Delivery  `json:"delivery"`
 	Payment           Payment   `json:"payment"`
 	Items             []Item    `json:"items"`
-	Locale            string    `json:"locale"`
-	InternalSignature string    `json:"internal_signature"`
-	CustomerID        string    `json:"customer_id"`
-	DeliveryService   string    `json:"delivery_service"`
-	Shardkey          string    `json:"shardkey"`
-	SmID              int       `json:"sm_id"`
-	DateCreated       time.Time `json:"date_created"`
-	OofShard          string    `json:"oof_shard"`
+	Locale            string    `json:"locale" example:"en"`
+	InternalSignature string    `json:"internal_signature" example:""`
+	CustomerID        string    `json:"customer_id" example:"test"`
+	DeliveryService   string    `json:"delivery_service" example:"meest"`
+	Shardkey          string    `json:"shardkey" example:"9"`
+	SmID              int       `json:"sm_id" example:"99"`
+	DateCreated       time.Time `json:"date_created" example:"2021-11-26T06:22:19Z"`
+	OofShard          string    `json:"oof_shard" example:"1"`
 }
 
 func ValidateOrder(order *Order) error {

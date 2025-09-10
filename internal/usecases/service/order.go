@@ -1,4 +1,4 @@
-package orderservice
+package service
 
 import (
 	"WBTECH_L0/internal/domain"
@@ -11,26 +11,15 @@ import (
 
 const cacheInitLimit = 10
 
-// OrderService отвечает за бизнес-логику работы с заказами.
-// @description Сервис для управления заказами: создание, получение и работа с кэшем.
 type OrderService struct {
 	repo  repository.Order
 	cache repository.Cache
 }
 
-// NewOrderService создает экземпляр сервиса.
-// @summary Создание сервиса
-// @param repo body repository.Order true "Репозиторий заказов"
-// @param cache body repository.Cache true "Кэш"
-// @return *OrderService
 func NewOrderService(repo repository.Order, cache repository.Cache) *OrderService {
 	return &OrderService{repo: repo, cache: cache}
 }
 
-// Create создает новый заказ
-// @summary Создание заказа
-// @description Валидирует и сохраняет заказ в БД и кэш.
-// @param order body domain.Order true "Заказ"
 func (o *OrderService) Create(ctx context.Context, order *domain.Order) (*domain.Order, error) {
 	if order == nil {
 		logrus.Error("Received nil order")
@@ -66,10 +55,6 @@ func (o *OrderService) Create(ctx context.Context, order *domain.Order) (*domain
 	return created, nil
 }
 
-// Get возвращает заказ по UID.
-// @summary Получение заказа
-// @description Ищет заказ сначала в кэше, затем в БД.
-// @param order_uid path string true "UID заказа"
 func (o *OrderService) Get(ctx context.Context, orderUID string) (*domain.Order, error) {
 	if orderUID == "" {
 		return nil, fmt.Errorf("order UID cannot be empty")
@@ -95,10 +80,6 @@ func (o *OrderService) Get(ctx context.Context, orderUID string) (*domain.Order,
 	return order, nil
 }
 
-// InitializeCache загружает заказы в кэш.
-// @summary Инициализация кэша
-// @description Загружает последние заказы из БД в кэш при старте сервиса.
-// @param ttl query int false "Время жизни кэша в секундах"
 func (o *OrderService) InitializeCache(ctx context.Context, ttl time.Duration) error {
 	if o.cache == nil {
 		return nil
@@ -131,9 +112,6 @@ func (o *OrderService) GetCacheStats() map[string]interface{} {
 	}
 }
 
-// IsInCache проверяет наличие заказа в кэше.
-// @summary Проверка заказа в кэше
-// @param order_uid path string true "UID заказа"
 func (o *OrderService) IsInCache(ctx context.Context, orderUID string) bool {
 	if o.cache == nil || orderUID == "" {
 		return false
@@ -141,10 +119,6 @@ func (o *OrderService) IsInCache(ctx context.Context, orderUID string) bool {
 	return o.cache.Has(ctx, orderUID)
 }
 
-// RefreshCache обновляет заказ в кэше.
-// @summary Обновление заказа в кэше
-// @param order_uid path string true "UID заказа"
-// @param ttl query int false "Время жизни кэша в секундах"
 func (o *OrderService) RefreshCache(ctx context.Context, orderUID string, ttl time.Duration) error {
 	if o.cache == nil {
 		return fmt.Errorf("cache not enabled")

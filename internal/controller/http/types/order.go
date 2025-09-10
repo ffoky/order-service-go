@@ -1,17 +1,34 @@
 package types
 
 import (
+	"WBTECH_L0/internal/domain"
+	"errors"
+	"github.com/go-chi/chi/v5"
 	"net/http"
 )
 
-type GetOrderHandlerRequest struct {
-	UID string `json:"order_uid"`
+type GetOrderRequest struct {
+	OrderID string `json:"order_id" validate:"required"`
 }
 
-func CreateGetOrderByUIDHanlderRequest(r *http.Request) (GetOrderHandlerRequest, error) {
-	uid := r.URL.Query().Get("uid")
-	if uid == "" {
-		return GetOrderHandlerRequest{}, http.ErrNoLocation
+func CreateGetOrderRequest(r *http.Request) (GetOrderRequest, error) {
+	orderID := chi.URLParam(r, "id")
+	if orderID == "" {
+		return GetOrderRequest{}, errors.New("order_id is required")
 	}
-	return GetOrderHandlerRequest{UID: uid}, nil
+	return GetOrderRequest{OrderID: orderID}, nil
+}
+
+type GetOrderResponse struct {
+	Order *domain.Order `json:"order"`
+}
+
+type ErrorResponse struct {
+	Error string `json:"error"`
+	Code  string `json:"code,omitempty"`
+}
+
+type ValidationErrorResponse struct {
+	Error  string            `json:"error"`
+	Fields map[string]string `json:"fields"`
 }

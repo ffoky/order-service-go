@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/sirupsen/logrus"
 )
 
 type TransactionManager struct {
@@ -24,7 +25,14 @@ func (tm *TransactionManager) WithTx(ctx context.Context, fn func(context.Contex
 	if err != nil {
 		return fmt.Errorf("begin transaction: %w", err)
 	}
-	defer tx.Rollback(ctx)
+
+	defer func() {
+		if tm.IsTransactionActive(ctx, tx) {
+			if rollbackErr := tx.Rollback(ctx); rollbackErr != nil {
+				logrus.WithError(rollbackErr).Warn("failed to rollback transaction")
+			}
+		}
+	}()
 
 	ctxWithTx := context.WithValue(ctx, TxKey{}, tx)
 
@@ -32,11 +40,24 @@ func (tm *TransactionManager) WithTx(ctx context.Context, fn func(context.Contex
 		return err
 	}
 
+	if !tm.IsTransactionActive(ctx, tx) {
+		return fmt.Errorf("transaction is no longer active")
+	}
+
 	if err := tx.Commit(ctx); err != nil {
 		return fmt.Errorf("commit transaction: %w", err)
 	}
 
 	return nil
+}
+
+func (tm *TransactionManager) IsTransactionActive(ctx context.Context, tx pgx.Tx) bool {
+	if tx == nil {
+		return false
+	}
+
+	_, err := tx.Exec(ctx, "SELECT 1")
+	return err == nil
 }
 
 func GetTx(ctx context.Context) pgx.Tx {

@@ -3,10 +3,10 @@ package generator
 import (
 	"WBTECH_L0/internal/domain"
 	"fmt"
+	"github.com/brianvoe/gofakeit/v7"
+	"github.com/sirupsen/logrus"
 	"math/rand"
 	"time"
-
-	"github.com/brianvoe/gofakeit/v7"
 )
 
 type Generator struct{}
@@ -20,13 +20,11 @@ func (g *Generator) GenerateOrders(count int) []*domain.Order {
 
 	for i := 0; i < count; i++ {
 		var order *domain.Order
-
 		if rand.Intn(count) < invalidOrderChance {
 			order = g.generateInvalidOrder()
 		} else {
 			order = g.generateOrder()
 		}
-
 		orders = append(orders, order)
 	}
 
@@ -34,11 +32,12 @@ func (g *Generator) GenerateOrders(count int) []*domain.Order {
 }
 
 func (g *Generator) generateOrder() *domain.Order {
-	gofakeit.Seed(time.Now().UnixNano())
+	if err := gofakeit.Seed(time.Now().UnixNano()); err != nil {
+		logrus.WithError(err).Warn("failed to seed gofakeit")
+	}
 
 	orderUID := g.generateValidOrderUID()
 	trackNumber := g.generateTrackNumber()
-
 	itemCount := rand.Intn(maxItemCount-minItemCount+1) + minItemCount
 	items := make([]domain.Item, itemCount)
 	goodsTotal := 0.0

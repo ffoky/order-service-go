@@ -16,7 +16,7 @@
 
 *.log
 logs/
-
+/docs
 
 
 *.exe

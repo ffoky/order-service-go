@@ -2,6 +2,9 @@ package app
 
 import (
 	"WBTECH_L0/internal/usecases/kafka/generator"
+	"WBTECH_L0/internal/usecases/service/processor"
+	httpSwagger "github.com/swaggo/http-swagger"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -18,7 +21,7 @@ import (
 	"WBTECH_L0/internal/repository/postgres/payment"
 	sender "WBTECH_L0/internal/usecases/kafka/sender"
 	"WBTECH_L0/internal/usecases/service"
-	"WBTECH_L0/internal/usecases/worker"
+	"WBTECH_L0/internal/usecases/service/worker"
 	pkgHttpServer "WBTECH_L0/pkg/http"
 	pkgPostgres "WBTECH_L0/pkg/postgres"
 	"context"
@@ -77,6 +80,8 @@ func Run(cfg *appConfig.AppConfig) {
 		logrus.Infof("Cache initialized successfully with %v orders", stats["cache_size"])
 	}
 
+	orderProcessor := processor.NewProcessor(orderUseCase)
+
 	messagesChan := make(chan []byte, messageBufferSize)
 
 	var wg sync.WaitGroup
@@ -84,7 +89,7 @@ func Run(cfg *appConfig.AppConfig) {
 		wg.Add(1)
 		go func(workerID int) {
 			defer wg.Done()
-			w := worker.NewWorker(workerID, messagesChan, orderUseCase)
+			w := worker.NewWorker(workerID, messagesChan, orderProcessor)
 			w.Start()
 		}(i + 1)
 	}
@@ -127,6 +132,19 @@ func Run(cfg *appConfig.AppConfig) {
 	orderHandlers.WithOrderHandlers(r)
 	staticHandlers.WithStaticHandlers(r)
 
+	r.Get("/swagger", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/swagger/", http.StatusMovedPermanently)
+	})
+
+	r.Get("/swagger/*", httpSwagger.Handler(
+		httpSwagger.URL("/swagger/doc.json"),
+	))
+
+	r.Get("/swagger/doc.json", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		http.ServeFile(w, r, "./docs/swagger.json")
+	})
+
 	httpServer, err := pkgHttpServer.CreateServerWithShutdown(r, cfg.HTTPConfig.Address)
 	if err != nil {
 		logrus.Fatalf("Failed to create HTTP server: %v", err)
@@ -141,10 +159,8 @@ func Run(cfg *appConfig.AppConfig) {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
 
-	select {
-	case s := <-interrupt:
-		logrus.Infof("app - Run - signal: %s", s.String())
-	}
+	s := <-interrupt
+	logrus.Infof("app - Run - signal: %s", s.String())
 
 	logrus.Println("Shutting down gracefully...")
 

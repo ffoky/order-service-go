@@ -6,7 +6,7 @@
 
 ### Предварительные требования
 - Установленный **Docker** и **Docker Compose**
-- Установленный **Make** (опционально, для использования Makefile)
+- Установленный **Make**
 
 ---
 
@@ -53,15 +53,13 @@ make up-without-app
 make up-app
 ```
 
-#### Вариант 2: Прямое использование Docker Compose
-- Запуск всех сервисов.
-- Или запуск с пересборкой приложения.
+#### Вариант 2:  Docker Compose
 
 ```bash
 # Запуск всех сервисов
 docker compose up -d
 
-# Или с пересборкой приложения
+# C пересборкой приложения
 docker compose up --build -d
 ```
 
@@ -74,3 +72,4 @@ docker compose up --build -d
 
 
 ![img.png](img.png)
+

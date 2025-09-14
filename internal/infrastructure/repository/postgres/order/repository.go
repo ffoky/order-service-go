@@ -1,10 +1,10 @@
 package order
 
 import (
-	"WBTECH_L0/internal/repository/postgres"
-	"WBTECH_L0/internal/repository/postgres/delivery"
-	"WBTECH_L0/internal/repository/postgres/items"
-	"WBTECH_L0/internal/repository/postgres/payment"
+	"WBTECH_L0/internal/infrastructure/repository/postgres"
+	"WBTECH_L0/internal/infrastructure/repository/postgres/delivery"
+	"WBTECH_L0/internal/infrastructure/repository/postgres/items"
+	"WBTECH_L0/internal/infrastructure/repository/postgres/payment"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 

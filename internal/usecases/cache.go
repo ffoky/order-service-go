@@ -1,4 +1,4 @@
-package repository
+package usecases
 
 import (
 	"WBTECH_L0/internal/domain"

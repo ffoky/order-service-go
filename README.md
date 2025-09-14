@@ -2,19 +2,12 @@
 Видео весит слишком много, чтобы загрузить прямо в markdown, поэтому залил на youtube
 [https://youtu.be/K9bKpWStBJk](https://www.youtube.com/live/K9bKpWStBJk&feature=youtu.be)
 
-## Установка и запуск сервиса
-
-### Предварительные требования
-- Установленный **Docker** и **Docker Compose**
-- Установленный **Make**
-
----
+## Запуск сервиса
 
 ### Шаг 1: Создание `.env` файла
 Создайте файл `.env` в корневой директории проекта с указанным содержимым.
 
 ```bash
-cat > .env << EOF
 SERVER_ADDR=0.0.0.0
 SERVER_PORT=8081
 
@@ -33,7 +26,6 @@ KAFKA_TOPIC=orders
 KAFKA_GROUP_ID=order-service
 
 CACHE_TTL=10m
-EOF
 ```
 
 ### Шаг 2: Загрузка переменных окружения
@@ -47,26 +39,34 @@ source .env
 #### Вариант 1: Использование Makefile (рекомендуется)
 
 ```bash
-# Запуск всех сервисов
+# запуск сервисов с логами
+make up-with-logs
+# без логов
 make up
-
-# Или пошаговый запуск:
-# Сначала запустите инфраструктуру
-make up-without-app
-
-# Затем запустите приложение
-make up-app
 ```
 
 #### Вариант 2:  Docker Compose
 
 ```bash
-# Запуск всех сервисов
+# запуск всех сервисов
 docker compose up -d
 
-# C пересборкой приложения
+# с пересборкой 
 docker compose up --build -d
 ```
+
+#### Запуск тестов 
+
+```bash
+make mocks
+
+go test -v ./internal/usecases/service/ -run TestOrderService
+
+# или make
+make tests
+```
+
+
 
 ### Доступ к сервисам
 - Приложение: [http://localhost:8081](http://localhost:8081)

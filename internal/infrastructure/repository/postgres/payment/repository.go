@@ -1,7 +1,7 @@
-package delivery
+package payment
 
 import (
-	"WBTECH_L0/internal/repository/postgres"
+	"WBTECH_L0/internal/infrastructure/repository/postgres"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 

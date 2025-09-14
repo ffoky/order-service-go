@@ -2,7 +2,8 @@ package service
 
 import (
 	"WBTECH_L0/internal/domain"
-	"WBTECH_L0/internal/repository"
+	"WBTECH_L0/internal/infrastructure/repository"
+	"WBTECH_L0/internal/usecases"
 	"context"
 	"fmt"
 	"github.com/sirupsen/logrus"
@@ -13,10 +14,10 @@ const cacheInitLimit = 10
 
 type OrderService struct {
 	repo  repository.Order
-	cache repository.Cache
+	cache usecases.Cache
 }
 
-func NewOrderService(repo repository.Order, cache repository.Cache) *OrderService {
+func NewOrderService(repo repository.Order, cache usecases.Cache) *OrderService {
 	return &OrderService{repo: repo, cache: cache}
 }
 
@@ -96,20 +97,6 @@ func (o *OrderService) InitializeCache(ctx context.Context, ttl time.Duration) e
 
 	logrus.Infof("Cache initialized with %d orders", len(orders))
 	return nil
-}
-
-func (o *OrderService) GetCacheStats() map[string]interface{} {
-	if o.cache == nil {
-		return map[string]interface{}{
-			"cache_enabled": false,
-			"cache_size":    0,
-		}
-	}
-
-	return map[string]interface{}{
-		"cache_enabled": true,
-		"cache_size":    o.cache.Size(),
-	}
 }
 
 func (o *OrderService) IsInCache(ctx context.Context, orderUID string) bool {

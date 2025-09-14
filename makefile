@@ -1,4 +1,4 @@
-.PHONY: up build-app rebuild-app up-without-app up-app logs-app stop down clean
+.PHONY: up build-app rebuild-app up-without-app up-app logs-app stop down clean tests mocks up-with-logs
 
 up:
 	docker compose up -d
@@ -15,8 +15,8 @@ up-without-app:
 up-app:
 	docker compose up -d app
 
-logs-app:
-	docker compose logs app
+up-with-logs:
+	docker compose up -d && docker compose logs -f app
 
 stop:
 	docker compose stop
@@ -26,3 +26,10 @@ down:
 
 clean:
 	docker compose down -v
+
+tests:
+	go test -v ./internal/usecases/service/ -run TestOrderService
+
+mocks:
+	mockery --name=Order --dir=internal/infrastructure/repository --output=internal/mocks --outpkg=mocks --with-expecter --filename=order_mock.go
+	mockery --name=Cache --dir=internal/usecases --output=internal/mocks --outpkg=mocks --with-expecter --filename=cache_mock.go

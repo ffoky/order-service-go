@@ -12,13 +12,13 @@ import (
 
 	appConfig "WBTECH_L0/config"
 	pkgHttp "WBTECH_L0/internal/controller/http"
-	"WBTECH_L0/internal/repository/cache"
-	"WBTECH_L0/internal/repository/kafka"
-	"WBTECH_L0/internal/repository/postgres"
-	"WBTECH_L0/internal/repository/postgres/delivery"
-	"WBTECH_L0/internal/repository/postgres/items"
-	"WBTECH_L0/internal/repository/postgres/order"
-	"WBTECH_L0/internal/repository/postgres/payment"
+	"WBTECH_L0/internal/infrastructure/cache"
+	"WBTECH_L0/internal/infrastructure/kafka"
+	"WBTECH_L0/internal/infrastructure/repository/postgres"
+	"WBTECH_L0/internal/infrastructure/repository/postgres/delivery"
+	"WBTECH_L0/internal/infrastructure/repository/postgres/items"
+	"WBTECH_L0/internal/infrastructure/repository/postgres/order"
+	"WBTECH_L0/internal/infrastructure/repository/postgres/payment"
 	sender "WBTECH_L0/internal/usecases/kafka/sender"
 	"WBTECH_L0/internal/usecases/service"
 	"WBTECH_L0/internal/usecases/service/worker"
@@ -75,9 +75,6 @@ func Run(cfg *appConfig.AppConfig) {
 
 	if err := orderUseCase.InitializeCache(ctx, cfg.CacheTTL); err != nil {
 		logrus.Errorf("Failed to initialize cache: %v", err)
-	} else {
-		stats := orderUseCase.GetCacheStats()
-		logrus.Infof("Cache initialized successfully with %v orders", stats["cache_size"])
 	}
 
 	orderProcessor := processor.NewProcessor(orderUseCase)
@@ -152,9 +149,6 @@ func Run(cfg *appConfig.AppConfig) {
 
 	logrus.Infof("HTTP server starting on %s", cfg.HTTPConfig.Address)
 	logrus.Infof("Open http://%s in your browser to see the demo page", "localhost:8081")
-
-	stats := orderUseCase.GetCacheStats()
-	logrus.Infof("Application started successfully. Cache stats: %+v", stats)
 
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)

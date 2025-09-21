@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/sirupsen/logrus"
-	"time"
 )
 
 const cacheInitLimit = 10
@@ -40,20 +39,20 @@ func (o *OrderService) Create(ctx context.Context, order *domain.Order) (*domain
 		return o.cache.Get(ctx, order.OrderUID)
 	}
 
-	created, err := o.repo.CreateOrder(ctx, order)
+	createdOrder, err := o.repo.CreateOrder(ctx, order)
 	if err != nil {
 		logrus.Errorf("Failed to create order %s: %v", order.OrderUID, err)
 		return nil, err
 	}
 
 	if o.cache != nil {
-		if err := o.cache.Set(ctx, created, 0); err != nil {
-			logrus.Warnf("Failed to cache order %s: %v", created.OrderUID, err)
+		if err := o.cache.Set(ctx, createdOrder); err != nil {
+			logrus.Warnf("Failed to cache order %s: %v", createdOrder.OrderUID, err)
 		}
 	}
 
-	logrus.Infof("Order %s successfully created", created.OrderUID)
-	return created, nil
+	logrus.Infof("Order %s successfully createdOrder", createdOrder.OrderUID)
+	return createdOrder, nil
 }
 
 func (o *OrderService) Get(ctx context.Context, orderUID string) (*domain.Order, error) {
@@ -73,7 +72,7 @@ func (o *OrderService) Get(ctx context.Context, orderUID string) (*domain.Order,
 	}
 
 	if o.cache != nil {
-		if err := o.cache.Set(ctx, order, 0); err != nil {
+		if err := o.cache.Set(ctx, order); err != nil {
 			logrus.Warnf("Failed to cache order %s: %v", order.OrderUID, err)
 		}
 	}
@@ -81,7 +80,7 @@ func (o *OrderService) Get(ctx context.Context, orderUID string) (*domain.Order,
 	return order, nil
 }
 
-func (o *OrderService) InitializeCache(ctx context.Context, ttl time.Duration) error {
+func (o *OrderService) InitializeCache(ctx context.Context) error {
 	if o.cache == nil {
 		return nil
 	}
@@ -91,7 +90,7 @@ func (o *OrderService) InitializeCache(ctx context.Context, ttl time.Duration) e
 		return fmt.Errorf("failed to load orders: %w", err)
 	}
 
-	if err := o.cache.LoadAll(ctx, orders, ttl); err != nil {
+	if err := o.cache.LoadAll(ctx, orders); err != nil {
 		return fmt.Errorf("failed to cache orders: %w", err)
 	}
 
@@ -104,14 +103,4 @@ func (o *OrderService) IsInCache(ctx context.Context, orderUID string) bool {
 		return false
 	}
 	return o.cache.Has(ctx, orderUID)
-}
-
-func (o *OrderService) RefreshCache(ctx context.Context, orderUID string, ttl time.Duration) error {
-	if o.cache == nil {
-		return fmt.Errorf("cache not enabled")
-	}
-	if orderUID == "" {
-		return fmt.Errorf("order UID cannot be empty")
-	}
-	return o.cache.Refresh(ctx, orderUID, ttl)
 }

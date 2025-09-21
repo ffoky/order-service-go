@@ -17,13 +17,15 @@ func NewWorker(id int, messagesChan <-chan []byte, processor *processor.Processo
 
 func (w *Worker) Start() {
 	logrus.Infof("Worker %d started", w.id)
+	defer logrus.Infof("Worker %d stopped", w.id)
+
 	for message := range w.messagesChan {
 		if message == nil {
 			continue
 		}
+
 		if err := w.processor.ProcessMessage(message); err != nil {
-			logrus.Errorf("Worker %d failed to process message: %v", w.id, err)
+			logrus.Errorf("Worker %d: final processing error (message sent to DLQ): %v", w.id, err)
 		}
 	}
-	logrus.Infof("Worker %d stopped", w.id)
 }

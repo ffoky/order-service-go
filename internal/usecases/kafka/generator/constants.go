@@ -19,7 +19,7 @@ const (
 	maxShardValue      = 9
 	maxSmID            = 1000
 	charset            = "abcdefghijklmnopqrstuvwxyz0123456789"
-	invalidOrderChance = 1
+	invalidOrderChance = 3
 	invalidCaseCount   = 4
 )
 

@@ -105,7 +105,7 @@ func TestOrderService_Create(t *testing.T) {
 				expectedOrder := createValidOrder("new-order")
 				cache.EXPECT().Has(mock.Anything, "new-order").Return(false)
 				repo.EXPECT().CreateOrder(mock.Anything, mock.Anything).Return(expectedOrder, nil)
-				cache.EXPECT().Set(mock.Anything, expectedOrder, time.Duration(0)).Return(nil)
+				cache.EXPECT().Set(mock.Anything, expectedOrder).Return(nil)
 			},
 			expectError: false,
 		},
@@ -174,7 +174,7 @@ func TestOrderService_Get(t *testing.T) {
 				repoOrder := createValidOrder("repo-uid")
 				cache.EXPECT().Get(mock.Anything, "repo-uid").Return(nil, errors.New("not in cache"))
 				repo.EXPECT().GetOrder(mock.Anything, "repo-uid").Return(repoOrder, nil)
-				cache.EXPECT().Set(mock.Anything, repoOrder, time.Duration(0)).Return(nil)
+				cache.EXPECT().Set(mock.Anything, repoOrder).Return(nil)
 			},
 			expectError: false,
 		},
@@ -228,7 +228,7 @@ func TestOrderService_InitializeCache(t *testing.T) {
 					createValidOrder("order-2"),
 				}
 				repo.EXPECT().GetOrders(mock.Anything, cacheInitLimit).Return(orders, nil)
-				cache.EXPECT().LoadAll(mock.Anything, orders, mock.AnythingOfType("time.Duration")).Return(nil)
+				cache.EXPECT().LoadAll(mock.Anything, orders).Return(nil)
 			},
 			expectError: false,
 		},
@@ -250,7 +250,7 @@ func TestOrderService_InitializeCache(t *testing.T) {
 
 			tt.setupMocks(mockRepo, mockCache)
 
-			err := service.InitializeCache(context.Background(), time.Hour)
+			err := service.InitializeCache(context.Background())
 
 			if tt.expectError {
 				assert.Error(t, err)

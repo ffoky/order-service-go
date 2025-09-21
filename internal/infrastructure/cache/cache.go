@@ -2,51 +2,50 @@ package cache
 
 import (
 	"WBTECH_L0/internal/domain"
+	"container/list"
 	"context"
 	"fmt"
 	"sync"
-	"time"
 )
 
 type CacheItem struct {
-	Order      *domain.Order
-	Expiration int64
+	Key   string
+	Order *domain.Order
 }
 
-type Cache struct {
-	mu                sync.RWMutex
-	items             map[string]CacheItem
-	insertOrder       []string
-	defaultExpiration time.Duration
-	maxSize           int
-	requestCount      int
-	maxRequestsPerSec int
-	lastResetTime     time.Time
+type LRUCache struct {
+	mu       sync.RWMutex
+	items    map[string]*list.Element
+	queue    *list.List
+	capacity int
 }
 
-func NewCache(defaultExpiration time.Duration) *Cache {
-	return &Cache{
-		items:             make(map[string]CacheItem),
-		insertOrder:       make([]string, 0),
-		defaultExpiration: defaultExpiration,
-		maxSize:           1000,
-		maxRequestsPerSec: 10000,
-		lastResetTime:     time.Now(),
+func NewLRUCache(capacity int) *LRUCache {
+	return &LRUCache{
+		capacity: capacity,
+		items:    make(map[string]*list.Element),
+		queue:    list.New(),
 	}
 }
 
-func (c *Cache) checkRateLimit() bool {
-	now := time.Now()
-	if now.Sub(c.lastResetTime) >= time.Second {
-		c.requestCount = 0
-		c.lastResetTime = now
+func (c *LRUCache) Get(ctx context.Context, key string) (*domain.Order, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if elem, exists := c.items[key]; exists {
+		c.queue.MoveToFront(elem)
+		return elem.Value.(*CacheItem).Order, nil
 	}
 
-	c.requestCount++
-	return c.requestCount <= c.maxRequestsPerSec
+	return nil, fmt.Errorf("order not found in cache")
 }
 
-func (c *Cache) Set(ctx context.Context, order *domain.Order, duration time.Duration) error {
+func (c *LRUCache) Set(ctx context.Context, order *domain.Order) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -60,218 +59,86 @@ func (c *Cache) Set(ctx context.Context, order *domain.Order, duration time.Dura
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	if !c.checkRateLimit() {
-		return fmt.Errorf("rate limit exceeded")
-	}
-
-	if _, exists := c.items[order.OrderUID]; exists {
-		return nil
-	}
-
-	if duration == 0 {
-		duration = c.defaultExpiration
-	}
-
-	var expiration int64
-	if duration > 0 {
-		expiration = time.Now().Add(duration).UnixNano()
-	}
-
-	if len(c.items) >= c.maxSize {
-		c.deleteOldest()
-	}
-
-	c.items[order.OrderUID] = CacheItem{
-		Order:      order,
-		Expiration: expiration,
-	}
-	c.insertOrder = append(c.insertOrder, order.OrderUID)
-
+	c.setInternal(order.OrderUID, order)
 	return nil
 }
 
-func (c *Cache) Get(ctx context.Context, orderUID string) (*domain.Order, error) {
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	default:
+func (c *LRUCache) setInternal(key string, order *domain.Order) {
+	if elem, exists := c.items[key]; exists {
+		c.queue.MoveToFront(elem)
+		elem.Value.(*CacheItem).Order = order
+		return
 	}
 
-	c.mu.RLock()
-	if !c.checkRateLimit() {
-		c.mu.RUnlock()
-		return nil, fmt.Errorf("rate limit exceeded")
+	if c.queue.Len() >= c.capacity {
+		c.evict()
 	}
 
-	item, exists := c.items[orderUID]
-	c.mu.RUnlock()
-
-	if !exists {
-		return nil, fmt.Errorf("order not found in cache")
+	item := &CacheItem{
+		Key:   key,
+		Order: order,
 	}
 
-	if item.Expiration > 0 && time.Now().UnixNano() > item.Expiration {
-		c.Delete(ctx, orderUID)
-		return nil, fmt.Errorf("order expired in cache")
-	}
-
-	return item.Order, nil
+	elem := c.queue.PushFront(item)
+	c.items[key] = elem
 }
 
-func (c *Cache) Has(ctx context.Context, orderUID string) bool {
+func (c *LRUCache) evict() {
+	elem := c.queue.Back()
+	if elem == nil {
+		return
+	}
+
+	item := c.queue.Remove(elem).(*CacheItem)
+	delete(c.items, item.Key)
+}
+
+func (c *LRUCache) Has(ctx context.Context, key string) bool {
 	select {
 	case <-ctx.Done():
 		return false
 	default:
 	}
-
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
-	item, exists := c.items[orderUID]
-	if !exists {
-		return false
-	}
-
-	return item.Expiration <= 0 || time.Now().UnixNano() <= item.Expiration
+	_, exists := c.items[key]
+	return exists
 }
 
-func (c *Cache) Delete(ctx context.Context, orderUID string) {
+func (c *LRUCache) Delete(ctx context.Context, key string) {
 	select {
 	case <-ctx.Done():
 		return
 	default:
 	}
-
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	if _, exists := c.items[orderUID]; exists {
-		delete(c.items, orderUID)
-
-		for i, uid := range c.insertOrder {
-			if uid == orderUID {
-				c.insertOrder = append(c.insertOrder[:i], c.insertOrder[i+1:]...)
-				break
-			}
-		}
+	if elem, exists := c.items[key]; exists {
+		c.queue.Remove(elem)
+		delete(c.items, key)
 	}
 }
 
-func (c *Cache) LoadAll(ctx context.Context, orders []*domain.Order, ttl time.Duration) error {
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	default:
-	}
-
+func (c *LRUCache) LoadAll(ctx context.Context, orders []*domain.Order) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	var expiration int64
-	if ttl == 0 {
-		ttl = c.defaultExpiration
-	}
-	if ttl > 0 {
-		expiration = time.Now().Add(ttl).UnixNano()
-	}
-
-	for _, order := range orders {
+	for i, order := range orders {
+		if i%100 == 0 {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			default:
+			}
+		}
 		if order != nil && order.OrderUID != "" {
 			if _, exists := c.items[order.OrderUID]; !exists {
-				if len(c.items) >= c.maxSize {
-					c.deleteOldest()
-				}
-
-				c.items[order.OrderUID] = CacheItem{
-					Order:      order,
-					Expiration: expiration,
-				}
-				c.insertOrder = append(c.insertOrder, order.OrderUID)
+				c.setInternal(order.OrderUID, order)
 			}
 		}
 	}
 
-	return nil
-}
-
-func (c *Cache) deleteOldest() {
-	if len(c.insertOrder) > 0 {
-		oldest := c.insertOrder[0]
-		delete(c.items, oldest)
-		c.insertOrder = c.insertOrder[1:]
-	}
-}
-
-func (c *Cache) GetAll(ctx context.Context) map[string]*domain.Order {
-	select {
-	case <-ctx.Done():
-		return nil
-	default:
-	}
-
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
-	result := make(map[string]*domain.Order)
-	now := time.Now().UnixNano()
-
-	for k, v := range c.items {
-		if v.Expiration <= 0 || now <= v.Expiration {
-			result[k] = v.Order
-		}
-	}
-
-	return result
-}
-
-func (c *Cache) Size() int {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
-	count := 0
-	now := time.Now().UnixNano()
-
-	for _, v := range c.items {
-		if v.Expiration <= 0 || now <= v.Expiration {
-			count++
-		}
-	}
-
-	return count
-}
-
-func (c *Cache) Clear() {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	c.items = make(map[string]CacheItem)
-	c.insertOrder = make([]string, 0)
-}
-
-func (c *Cache) Refresh(ctx context.Context, orderUID string, duration time.Duration) error {
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	default:
-	}
-
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	item, ok := c.items[orderUID]
-	if !ok {
-		return fmt.Errorf("order not found in cache")
-	}
-
-	if duration == 0 {
-		duration = c.defaultExpiration
-	}
-
-	if duration > 0 {
-		item.Expiration = time.Now().Add(duration).UnixNano()
-	}
-
-	c.items[orderUID] = item
 	return nil
 }

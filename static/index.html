@@ -2,37 +2,461 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Order Service</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 600px; margin: 40px auto; }
-        h1 { font-size: 22px; }
-        input, button { padding: 8px; font-size: 14px; }
-        #result { white-space: pre-wrap; background: #f9f9f9; padding: 10px; border: 1px solid #ddd; margin-top: 15px; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .header {
+            background: white;
+            color: black;
+            padding: 30px;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .search-section {
+            margin-bottom: 30px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 30px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .input-group input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            background: white;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #E638CF;
+        }
+
+        .search-btn {
+            padding: 12px 24px;
+            background: #E638CF;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .search-btn:hover {
+            background: #d032c0;
+        }
+
+        .search-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .status {
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .error {
+            display: none;
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c33;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+
+        .result {
+            display: none;
+        }
+
+        .order-info {
+            background: #fafafa;
+            padding: 20px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+
+        .order-header {
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+        }
+
+        .order-id {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .order-date {
+            font-size: 13px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .info-section {
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            font-size: 15px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .info-row {
+            display: flex;
+            padding: 4px 0;
+            border-bottom: 1px solid #f5f5f5;
+        }
+
+        .info-label {
+            font-weight: 500;
+            color: #555;
+            width: 140px;
+            flex-shrink: 0;
+        }
+
+        .info-value {
+            color: #333;
+        }
+
+        .items-list {
+            background: white;
+            border: 1px solid #eee;
+            border-radius: 4px;
+        }
+
+        .item {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f5f5f5;
+        }
+
+        .item:last-child {
+            border-bottom: none;
+        }
+
+        .item-name {
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .item-details {
+            font-size: 13px;
+            color: #666;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .total {
+            background: #E638CF;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty h3 {
+            margin-bottom: 10px;
+            color: #666;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                margin: 10px;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            .input-group {
+                flex-direction: column;
+            }
+
+            .info-row {
+                flex-direction: column;
+            }
+
+            .info-label {
+                width: auto;
+                margin-bottom: 2px;
+            }
+        }
     </style>
 </head>
 <body>
-<h1>Поиск заказа</h1>
-<input id="orderId" type="text" placeholder="Введите Order ID">
-<button onclick="fetchOrder()">Найти</button>
+<div class="container">
+    <div class="header">
+        <h1>Order Service</h1>
+        <p>Поиск заказов</p>
+    </div>
 
-<div id="result"></div>
+    <div class="content">
+        <div class="search-section">
+            <div class="input-group">
+                <input id="orderId" type="text" placeholder="Введите ID заказа">
+                <button class="search-btn" onclick="fetchOrder()">Найти</button>
+            </div>
+            <div class="status">Сервис активен</div>
+        </div>
+
+        <div class="loading" id="loading">
+            Поиск заказа...
+        </div>
+
+        <div class="error" id="error"></div>
+
+        <div class="result" id="result"></div>
+
+        <div class="empty" id="empty">
+            <h3>Введите ID заказа</h3>
+            <p>Для поиска информации о заказе введите его уникальный идентификатор</p>
+        </div>
+    </div>
+</div>
 
 <script>
-    async function fetchOrder() {
-        const id = document.getElementById("orderId").value.trim();
-        const resultDiv = document.getElementById("result");
+    document.getElementById('orderId').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') fetchOrder();
+    });
 
+    function showElement(id) {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('error').style.display = 'none';
+        document.getElementById('result').style.display = 'none';
+        document.getElementById('empty').style.display = 'none';
+        document.getElementById(id).style.display = 'block';
+    }
+
+    function showError(message) {
+        document.getElementById('error').textContent = message;
+        showElement('error');
+    }
+
+    function formatDate(dateString) {
+        try {
+            return new Date(dateString).toLocaleString('ru-RU');
+        } catch {
+            return dateString || 'Не указана';
+        }
+    }
+
+    function formatCurrency(amount) {
+        if (!amount && amount !== 0) return 'Не указана';
+        return amount + ' USD';
+    }
+
+    function getValue(obj, path) {
+        return path.split('.').reduce((o, p) => o && o[p], obj) || 'Не указано';
+    }
+
+    function renderOrder(order) {
+        const delivery = order.delivery || {};
+        const payment = order.payment || {};
+        const items = order.items || [];
+
+        let html = `
+                <div class="order-info">
+                    <div class="order-header">
+                        <div class="order-id">Заказ ${order.order_uid || 'Неизвестен'}</div>
+                        <div class="order-date">Создан: ${formatDate(order.date_created)}</div>
+                    </div>
+
+                    <div class="info-section">
+                        <div class="section-title">Основная информация</div>
+                        <div class="info-row">
+                            <div class="info-label">Трек номер:</div>
+                            <div class="info-value">${order.track_number || 'Не указан'}</div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Статус:</div>
+                            <div class="info-value">${order.entry || 'Обработка'}</div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Регион:</div>
+                            <div class="info-value">${order.locale || 'ru'}</div>
+                        </div>
+                    </div>
+
+                    <div class="info-section">
+                        <div class="section-title">Доставка</div>
+                        <div class="info-row">
+                            <div class="info-label">Имя:</div>
+                            <div class="info-value">${delivery.name || 'Не указано'}</div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Телефон:</div>
+                            <div class="info-value">${delivery.phone || 'Не указан'}</div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Адрес:</div>
+                            <div class="info-value">${delivery.address || 'Не указан'}</div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Город:</div>
+                            <div class="info-value">${delivery.city || 'Не указан'}</div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Email:</div>
+                            <div class="info-value">${delivery.email || 'Не указан'}</div>
+                        </div>
+                    </div>
+
+                    <div class="info-section">
+                        <div class="section-title">Оплата</div>
+                        <div class="info-row">
+                            <div class="info-label">Транзакция:</div>
+                            <div class="info-value">${payment.transaction || 'Не указана'}</div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Валюта:</div>
+                            <div class="info-value">${payment.currency || 'USD'}</div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Провайдер:</div>
+                            <div class="info-value">${payment.provider || 'Не указан'}</div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Сумма:</div>
+                            <div class="info-value">${formatCurrency(payment.amount)}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+        if (items.length > 0) {
+            html += `
+                    <div class="info-section">
+                        <div class="section-title">Товары (${items.length})</div>
+                        <div class="items-list">
+                `;
+
+            items.forEach(item => {
+                html += `
+                        <div class="item">
+                            <div class="item-name">${item.name || 'Товар'}</div>
+                            <div class="item-details">
+                                <span>Количество: ${item.quantity || 1}</span>
+                                <span>${formatCurrency(item.price)}</span>
+                            </div>
+                        </div>
+                    `;
+            });
+
+            html += `
+                        </div>
+                    </div>
+                `;
+        }
+
+        html += `
+                <div class="total">
+                    Общая сумма: ${formatCurrency(payment.amount)}
+                </div>
+            `;
+
+        document.getElementById('result').innerHTML = html;
+        showElement('result');
+    }
+
+    async function fetchOrder() {
+        const id = document.getElementById('orderId').value.trim();
         if (!id) {
-            resultDiv.textContent = "Введите ID заказа";
+            showError('Введите ID заказа');
             return;
         }
 
+        const btn = document.querySelector('.search-btn');
+        btn.disabled = true;
+        btn.textContent = 'Поиск...';
+        showElement('loading');
+
         try {
-            const res = await fetch(`/order/${id}`);
-            const data = await res.json();
-            resultDiv.textContent = JSON.stringify(data, null, 2);
-        } catch (err) {
-            resultDiv.textContent = "Ошибка при запросе: " + err;
+            const response = await fetch(`/order/${id}`);
+
+            if (!response.ok) {
+                if (response.status === 404) {
+                    throw new Error('Заказ не найден');
+                }
+                throw new Error('Ошибка сервера');
+            }
+
+            const data = await response.json();
+
+            // Извлекаем данные заказа из обертки
+            const orderData = data.order || data;
+            renderOrder(orderData);
+
+        } catch (error) {
+            showError(error.message);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Найти';
         }
     }
 </script>

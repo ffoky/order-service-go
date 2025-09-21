@@ -35,6 +35,7 @@ const (
 	workersCount        = 5
 	messageBufferSize   = 100
 	shutdownTimeout     = 5 * time.Second
+	cacheCapacity       = 10
 )
 
 func Run(cfg *appConfig.AppConfig) {
@@ -68,16 +69,27 @@ func Run(cfg *appConfig.AppConfig) {
 		*itemsRepo,
 	)
 
-	orderCache := cache.NewCache(cfg.CacheTTL)
+	orderCache := cache.NewLRUCache(cacheCapacity)
 	logrus.Info("Cache created successfully")
 
 	orderUseCase := service.NewOrderService(orderRepo, orderCache)
 
-	if err := orderUseCase.InitializeCache(ctx, cfg.CacheTTL); err != nil {
+	if err := orderUseCase.InitializeCache(ctx); err != nil {
 		logrus.Errorf("Failed to initialize cache: %v", err)
 	}
 
-	orderProcessor := processor.NewProcessor(orderUseCase)
+	dlqTopic := cfg.KafkaConfig.Topic + "_dlq"
+	dlqProducer, err := kafka.NewDLQProducer(
+		cfg.KafkaConfig.Brokers,
+		dlqTopic,
+	)
+	if err != nil {
+		logrus.Fatalf("Failed to create DLQ producer: %v", err)
+	}
+	defer dlqProducer.Close()
+	logrus.Info("DLQ producer created successfully")
+
+	orderProcessor := processor.NewProcessor(orderUseCase, dlqProducer, cfg.KafkaConfig.Topic)
 
 	messagesChan := make(chan []byte, messageBufferSize)
 

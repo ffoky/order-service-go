@@ -60,17 +60,6 @@ func LoadConfig() (*AppConfig, error) {
 		return nil, fmt.Errorf("failed to load Database config: %w", err)
 	}
 
-	cacheTTLStr, err := getEnv("CACHE_TTL")
-	if err != nil {
-		return nil, fmt.Errorf("CACHE_TTL is required: %w", err)
-	}
-
-	ttl, err := time.ParseDuration(cacheTTLStr)
-	if err != nil {
-		return nil, fmt.Errorf("invalid CACHE_TTL format: %w", err)
-	}
-	cfg.CacheTTL = ttl
-
 	return cfg, nil
 }
 

@@ -20,7 +20,7 @@ func CreateGetOrderRequest(r *http.Request) (GetOrderRequest, error) {
 }
 
 type GetOrderResponse struct {
-	Order *domain.Order `json:"order"`
+	*domain.Order
 }
 
 type ErrorResponse struct {

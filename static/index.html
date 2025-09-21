@@ -169,7 +169,7 @@
         .info-label {
             font-weight: 500;
             color: #555;
-            width: 140px;
+            width: 160px;
             flex-shrink: 0;
         }
 
@@ -201,8 +201,12 @@
         .item-details {
             font-size: 13px;
             color: #666;
+        }
+
+        .item-row {
             display: flex;
             justify-content: space-between;
+            margin: 2px 0;
         }
 
         .total {
@@ -306,13 +310,9 @@
         }
     }
 
-    function formatCurrency(amount) {
+    function formatCurrency(amount, currency = 'USD') {
         if (!amount && amount !== 0) return 'Не указана';
-        return amount + ' USD';
-    }
-
-    function getValue(obj, path) {
-        return path.split('.').reduce((o, p) => o && o[p], obj) || 'Не указано';
+        return `${amount} ${currency}`;
     }
 
     function renderOrder(order) {
@@ -321,104 +321,194 @@
         const items = order.items || [];
 
         let html = `
-                <div class="order-info">
-                    <div class="order-header">
-                        <div class="order-id">Заказ ${order.order_uid || 'Неизвестен'}</div>
-                        <div class="order-date">Создан: ${formatDate(order.date_created)}</div>
-                    </div>
+            <div class="order-info">
+                <div class="order-header">
+                    <div class="order-id">Заказ ${order.order_uid || 'Неизвестен'}</div>
+                    <div class="order-date">Создан: ${formatDate(order.date_created)}</div>
+                </div>
 
-                    <div class="info-section">
-                        <div class="section-title">Основная информация</div>
-                        <div class="info-row">
-                            <div class="info-label">Трек номер:</div>
-                            <div class="info-value">${order.track_number || 'Не указан'}</div>
-                        </div>
-                        <div class="info-row">
-                            <div class="info-label">Статус:</div>
-                            <div class="info-value">${order.entry || 'Обработка'}</div>
-                        </div>
-                        <div class="info-row">
-                            <div class="info-label">Регион:</div>
-                            <div class="info-value">${order.locale || 'ru'}</div>
-                        </div>
+                <div class="info-section">
+                    <div class="section-title">Основная информация</div>
+                    <div class="info-row">
+                        <div class="info-label">ID заказа:</div>
+                        <div class="info-value">${order.order_uid || 'Не указан'}</div>
                     </div>
-
-                    <div class="info-section">
-                        <div class="section-title">Доставка</div>
-                        <div class="info-row">
-                            <div class="info-label">Имя:</div>
-                            <div class="info-value">${delivery.name || 'Не указано'}</div>
-                        </div>
-                        <div class="info-row">
-                            <div class="info-label">Телефон:</div>
-                            <div class="info-value">${delivery.phone || 'Не указан'}</div>
-                        </div>
-                        <div class="info-row">
-                            <div class="info-label">Адрес:</div>
-                            <div class="info-value">${delivery.address || 'Не указан'}</div>
-                        </div>
-                        <div class="info-row">
-                            <div class="info-label">Город:</div>
-                            <div class="info-value">${delivery.city || 'Не указан'}</div>
-                        </div>
-                        <div class="info-row">
-                            <div class="info-label">Email:</div>
-                            <div class="info-value">${delivery.email || 'Не указан'}</div>
-                        </div>
+                    <div class="info-row">
+                        <div class="info-label">Трек номер:</div>
+                        <div class="info-value">${order.track_number || 'Не указан'}</div>
                     </div>
-
-                    <div class="info-section">
-                        <div class="section-title">Оплата</div>
-                        <div class="info-row">
-                            <div class="info-label">Транзакция:</div>
-                            <div class="info-value">${payment.transaction || 'Не указана'}</div>
-                        </div>
-                        <div class="info-row">
-                            <div class="info-label">Валюта:</div>
-                            <div class="info-value">${payment.currency || 'USD'}</div>
-                        </div>
-                        <div class="info-row">
-                            <div class="info-label">Провайдер:</div>
-                            <div class="info-value">${payment.provider || 'Не указан'}</div>
-                        </div>
-                        <div class="info-row">
-                            <div class="info-label">Сумма:</div>
-                            <div class="info-value">${formatCurrency(payment.amount)}</div>
-                        </div>
+                    <div class="info-row">
+                        <div class="info-label">Точка входа:</div>
+                        <div class="info-value">${order.entry || 'Не указана'}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">Клиент ID:</div>
+                        <div class="info-value">${order.customer_id || 'Не указан'}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">Служба доставки:</div>
+                        <div class="info-value">${order.delivery_service || 'Не указана'}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">Локаль:</div>
+                        <div class="info-value">${order.locale || 'ru'}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">Ключ шардирования:</div>
+                        <div class="info-value">${order.shardkey || 'Не указан'}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">SM ID:</div>
+                        <div class="info-value">${order.sm_id || 'Не указан'}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">OOF Shard:</div>
+                        <div class="info-value">${order.oof_shard || 'Не указан'}</div>
                     </div>
                 </div>
-            `;
+
+                <div class="info-section">
+                    <div class="section-title">Доставка</div>
+                    <div class="info-row">
+                        <div class="info-label">Имя получателя:</div>
+                        <div class="info-value">${delivery.name || 'Не указано'}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">Телефон:</div>
+                        <div class="info-value">${delivery.phone || 'Не указан'}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">Почтовый индекс:</div>
+                        <div class="info-value">${delivery.zip || 'Не указан'}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">Город:</div>
+                        <div class="info-value">${delivery.city || 'Не указан'}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">Адрес:</div>
+                        <div class="info-value">${delivery.address || 'Не указан'}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">Регион:</div>
+                        <div class="info-value">${delivery.region || 'Не указан'}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">Email:</div>
+                        <div class="info-value">${delivery.email || 'Не указан'}</div>
+                    </div>
+                </div>
+
+                <div class="info-section">
+                    <div class="section-title">Платежная информация</div>
+                    <div class="info-row">
+                        <div class="info-label">ID транзакции:</div>
+                        <div class="info-value">${payment.transaction || 'Не указана'}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">ID запроса:</div>
+                        <div class="info-value">${payment.request_id || 'Не указан'}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">Валюта:</div>
+                        <div class="info-value">${payment.currency || 'USD'}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">Провайдер:</div>
+                        <div class="info-value">${payment.provider || 'Не указан'}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">Общая сумма:</div>
+                        <div class="info-value">${formatCurrency(payment.amount, payment.currency)}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">Дата платежа:</div>
+                        <div class="info-value">${payment.payment_dt ? new Date(payment.payment_dt * 1000).toLocaleString('ru-RU') : 'Не указана'}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">Банк:</div>
+                        <div class="info-value">${payment.bank || 'Не указан'}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">Стоимость доставки:</div>
+                        <div class="info-value">${formatCurrency(payment.delivery_cost, payment.currency)}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">Стоимость товаров:</div>
+                        <div class="info-value">${formatCurrency(payment.goods_total, payment.currency)}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">Таможенный сбор:</div>
+                        <div class="info-value">${formatCurrency(payment.custom_fee, payment.currency)}</div>
+                    </div>
+                </div>
+            </div>
+        `;
 
         if (items.length > 0) {
             html += `
-                    <div class="info-section">
-                        <div class="section-title">Товары (${items.length})</div>
-                        <div class="items-list">
-                `;
+                <div class="info-section">
+                    <div class="section-title">Товары в заказе (${items.length})</div>
+                    <div class="items-list">
+            `;
 
-            items.forEach(item => {
+            items.forEach((item, index) => {
                 html += `
-                        <div class="item">
-                            <div class="item-name">${item.name || 'Товар'}</div>
-                            <div class="item-details">
-                                <span>Количество: ${item.quantity || 1}</span>
-                                <span>${formatCurrency(item.price)}</span>
+                    <div class="item">
+                        <div class="item-name">${item.name || `Товар ${index + 1}`}</div>
+                        <div class="item-details">
+                            <div class="item-row">
+                                <span>ID товара:</span>
+                                <span>${item.chrt_id || 'Не указан'}</span>
                             </div>
-                        </div>
-                    `;
-            });
-
-            html += `
+                            <div class="item-row">
+                                <span>Артикул:</span>
+                                <span>${item.nm_id || 'Не указан'}</span>
+                            </div>
+                            <div class="item-row">
+                                <span>Бренд:</span>
+                                <span>${item.brand || 'Не указан'}</span>
+                            </div>
+                            <div class="item-row">
+                                <span>Размер:</span>
+                                <span>${item.size || 'Не указан'}</span>
+                            </div>
+                            <div class="item-row">
+                                <span>Цена:</span>
+                                <span>${formatCurrency(item.price, payment.currency)}</span>
+                            </div>
+                            <div class="item-row">
+                                <span>Скидка:</span>
+                                <span>${item.sale || 0}%</span>
+                            </div>
+                            <div class="item-row">
+                                <span>Итоговая цена:</span>
+                                <span><strong>${formatCurrency(item.total_price, payment.currency)}</strong></span>
+                            </div>
+                            <div class="item-row">
+                                <span>Статус:</span>
+                                <span>${item.status || 'Неизвестен'}</span>
+                            </div>
+                            <div class="item-row">
+                                <span>RID:</span>
+                                <span style="font-size: 11px; color: #888;">${item.rid || 'Не указан'}</span>
+                            </div>
                         </div>
                     </div>
                 `;
+            });
+
+            html += `
+                    </div>
+                </div>
+            `;
         }
 
         html += `
-                <div class="total">
-                    Общая сумма: ${formatCurrency(payment.amount)}
-                </div>
-            `;
+            <div class="total">
+                Общая сумма заказа: ${formatCurrency(payment.amount, payment.currency)}
+            </div>
+        `;
 
         document.getElementById('result').innerHTML = html;
         showElement('result');
@@ -446,10 +536,7 @@
                 throw new Error('Ошибка сервера');
             }
 
-            const data = await response.json();
-
-            // Извлекаем данные заказа из обертки
-            const orderData = data.order || data;
+            const orderData = await response.json();
             renderOrder(orderData);
 
         } catch (error) {

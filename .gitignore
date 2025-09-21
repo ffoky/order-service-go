@@ -9,7 +9,6 @@
 
 /bin/
 /dist/
-
 /.pkg/
 
 /tmp/
@@ -31,3 +30,4 @@ logs/
 
 /go.work
 /go.work.sum
+/internal/mocks/

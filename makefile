@@ -29,6 +29,7 @@ clean:
 
 tests:
 	go test -v ./internal/usecases/service/ -run TestOrderService
+	go test -v ./internal/infrastructure/cache -run TestLRUCache
 
 mocks:
 	mockery --name=Order --dir=internal/infrastructure/repository --output=internal/mocks --outpkg=mocks --with-expecter --filename=order_mock.go

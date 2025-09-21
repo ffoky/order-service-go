@@ -1,6 +1,6 @@
 # Видео 
 Видео весит слишком много, чтобы загрузить прямо в markdown, поэтому залил на youtube
-[https://youtu.be/K9bKpWStBJk](https://www.youtube.com/live/K9bKpWStBJk&feature=youtu.be)
+[2025-09-21 22-10-23.mp4](2025-09-21%2022-10-23.mp4)
 
 ## Запуск сервиса
 
@@ -24,8 +24,6 @@ KAFKA_PORT=29092
 KAFKA_HEALTHCHECK_TOPIC=__consumer_offsets
 KAFKA_TOPIC=orders
 KAFKA_GROUP_ID=order-service
-
-CACHE_TTL=10m
 ```
 
 ### Шаг 2: Загрузка переменных окружения

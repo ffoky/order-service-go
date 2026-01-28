@@ -25,33 +25,61 @@
 
 ```mermaid
 graph LR
-    subgraph Domain
-        E[Order, Delivery,<br/>Payment, Item]
+    subgraph external [" "]
+        direction TB
+        CLIENT([Браузер])
+        KAFKA[(Apache Kafka)]
     end
 
-    subgraph UseCases
-        S[OrderService]
-        CI[Cache Interface]
-        RI[Repository Interface]
+    subgraph controller ["Controller"]
+        direction TB
+        H["HTTP Handlers<br/>Chi Router"]
+        SW["Swagger UI"]
+        WEB["Static Web UI"]
     end
 
-    subgraph Controller
-        H[HTTP Handlers]
-        ST[Static Files]
+    subgraph usecases ["Use Cases"]
+        direction TB
+        S["OrderService"]
+        P["Processor"]
+        W["Worker Pool ×5"]
+        CI{{"Cache Interface"}}
+        RI{{"Repository Interface"}}
     end
 
-    subgraph Infrastructure
-        R[PostgreSQL Repos]
-        LC[LRU Cache]
-        KF[Kafka Consumer/<br/>Producer/DLQ]
+    subgraph domain ["Domain"]
+        direction TB
+        E["Order | Delivery<br/>Payment | Item"]
+        V["Validation Rules"]
     end
 
-    H --> S
+    subgraph infra ["Infrastructure"]
+        direction TB
+        LC["LRU Cache<br/>capacity: 10"]
+        R["PostgreSQL Repos<br/>Transaction Manager"]
+        KF["Kafka Consumer"]
+        KP["Kafka Producer"]
+        DLQ["Dead Letter Queue"]
+    end
+
+    CLIENT -->|GET /order/id| H
+    CLIENT --> WEB
+    KAFKA -->|consume| KF
+    KF -->|channel buf=100| W
+    W --> P
+    P --> S
+    S --> E
     S --> CI
     S --> RI
     CI -.->|impl| LC
     RI -.->|impl| R
-    KF --> S
+    P -->|invalid msg| DLQ
+
+    style external fill:#2d2d2d,stroke:#555,stroke-dasharray:5,color:#fff
+    style controller fill:#1565c0,stroke:#0d47a1,color:#fff
+    style usecases fill:#6a1b9a,stroke:#4a148c,color:#fff
+    style domain fill:#e65100,stroke:#bf360c,color:#fff
+    style infra fill:#2e7d32,stroke:#1b5e20,color:#fff
 ```
 
 

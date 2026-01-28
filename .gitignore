@@ -31,3 +31,4 @@ logs/
 /go.work
 /go.work.sum
 /internal/mocks/
+pet_project_description.txt

@@ -7,7 +7,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/sirupsen/logrus"
 	"net/http"
-	"time"
 )
 
 type OrderHandler struct {
@@ -31,15 +30,11 @@ func NewOrderHandler(service usecases.Order) *OrderHandler {
 // @Failure      500  {object}  types.ErrorResponse
 // @Router       /order/{id} [get]
 func (h *OrderHandler) getOrderHandler(w http.ResponseWriter, r *http.Request) {
-	startTime := time.Now()
-
 	request, err := types.CreateGetOrderRequest(r)
 	if err != nil {
 		h.sendErrorResponse(w, "Invalid request: "+err.Error(), http.StatusBadRequest, "INVALID_REQUEST")
 		return
 	}
-
-	fromCache := h.service.IsInCache(r.Context(), request.OrderID)
 
 	orderObject, err := h.service.Get(r.Context(), request.OrderID)
 	if err != nil {
@@ -48,18 +43,12 @@ func (h *OrderHandler) getOrderHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	source := "database"
-	if fromCache {
-		source = "cache"
-	}
-
 	response := types.GetOrderResponse{
 		Order: orderObject,
 	}
 
 	h.sendSuccessResponse(w, response)
 
-	logrus.Infof("Order %s received from %s in %s", request.OrderID, source, time.Since(startTime))
 }
 
 func (h *OrderHandler) sendSuccessResponse(w http.ResponseWriter, data interface{}) {

@@ -3,11 +3,17 @@ package http
 import (
 	"WBTECH_L0/internal/controller/http/types"
 	"WBTECH_L0/internal/usecases"
+	"bytes"
 	"encoding/json"
 	"github.com/go-chi/chi/v5"
 	"github.com/sirupsen/logrus"
 	"net/http"
+	"sync"
 )
+
+var bufPool = sync.Pool{
+	New: func() any { return new(bytes.Buffer) },
+}
 
 type OrderHandler struct {
 	service usecases.Order
@@ -52,13 +58,19 @@ func (h *OrderHandler) getOrderHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *OrderHandler) sendSuccessResponse(w http.ResponseWriter, data interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+	buf := bufPool.Get().(*bytes.Buffer)
+	buf.Reset()
+	defer bufPool.Put(buf)
 
-	if err := json.NewEncoder(w).Encode(data); err != nil {
+	if err := json.NewEncoder(buf).Encode(data); err != nil {
 		logrus.Errorf("Failed to encode success response: %v", err)
 		h.sendErrorResponse(w, "Internal server error", http.StatusInternalServerError, "ENCODING_ERROR")
+		return
 	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(buf.Bytes())
 }
 
 func (h *OrderHandler) sendErrorResponse(w http.ResponseWriter, message string, statusCode int, code string) {

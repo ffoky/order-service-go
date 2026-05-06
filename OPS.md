@@ -41,3 +41,10 @@ Handler пропал из топ 10
 А так же из flamegraph пропал logrus только сеть осталась + encoding
 
 ![img_4.png](img_4.png)
+
+## 2-я оптимизация это добавить sync.Pool к json/encoder
+Так же можно совсем заменить json-encoder на bytedance-sonic
+
+sync.Pool только ухудшил картину
+
+![img_5.png](img_5.png)

@@ -5,6 +5,7 @@ import (
 	"WBTECH_L0/internal/usecases/service/processor"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"syscall"
@@ -154,6 +155,12 @@ func Run(cfg *appConfig.AppConfig) {
 		http.ServeFile(w, r, "./docs/swagger.json")
 	})
 
+	go func() {
+		logrus.Info("pprof server starting on :6060")
+		if err := http.ListenAndServe(":6060", nil); err != nil {
+			logrus.Errorf("pprof server failed: %v", err)
+		}
+	}()
 	httpServer, err := pkgHttpServer.CreateServerWithShutdown(r, cfg.HTTPConfig.Address)
 	if err != nil {
 		logrus.Fatalf("Failed to create HTTP server: %v", err)
